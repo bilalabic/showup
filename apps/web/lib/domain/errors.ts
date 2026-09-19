@@ -55,7 +55,7 @@ const CONTRACT_ERROR_MESSAGES: Readonly<Record<ContractErrorCode, string>> = {
   [ContractErrorCode.AlreadyReserved]:
     "You already hold a reservation for this event.",
   [ContractErrorCode.EventFull]:
-    "The last seat was taken while your transaction was being sent. No bond was taken.",
+    "The last seat was taken while your transaction was being sent. No bond was taken, though a signed transaction may still have paid a network fee.",
   [ContractErrorCode.NotLocked]:
     "This bond has already been released — it was checked in, cancelled, refunded or settled.",
   [ContractErrorCode.CheckInNotOpen]:

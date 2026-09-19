@@ -10,7 +10,7 @@
  * rule the contract owns. Contract errors are mapped by code, never by string.
  */
 
-import { rpc } from "@stellar/stellar-sdk";
+import { rpc, xdr } from "@stellar/stellar-sdk";
 import type { AssembledTransaction, Result } from "@stellar/stellar-sdk/contract";
 
 import type {
@@ -47,6 +47,13 @@ export type { Signer } from "./client";
 export { CONTRACT_ID, NETWORK_PASSPHRASE } from "./client";
 export { ContractError } from "./errors";
 export type { CreateEventInput } from "../domain";
+export { listEventReservations, readEventLog } from "./event-log";
+export type {
+  EventLogRetention,
+  EventLogSnapshot,
+  EventReservationList,
+  ShowUpContractEvent,
+} from "./event-log";
 
 import type { Signer } from "./client";
 
@@ -93,19 +100,75 @@ function toHex(bytes: Uint8Array): string {
   );
 }
 
-/** Unwrap a Rust `Result` returned by the bindings. */
+// The SDK builds its own error table from the contract spec rather than from
+// the bindings' `Errors` export, so the value it hands back is never identity-
+// equal to one of those objects. The real signal is the base64 ScError the spec
+// decoder puts in `message`.
+function contractCodeFromResultError(error: unknown): number | null {
+  const message = (error as { message?: unknown } | null)?.message;
+  if (typeof message !== "string") return null;
+
+  try {
+    const parsed = xdr.ScError.fromXDR(message, "base64");
+    return parsed.type === "sceContract" ? parsed.contractCode : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Unwrap a Rust `Result` returned by the bindings without losing its code. */
 function unwrapResult<T>(result: Result<T>): T {
   if (result.isOk()) {
     return result.unwrap();
   }
 
-  throw new Error(
-    `The contract returned an error: ${result.unwrapErr().message}`,
-  );
+  const returned = result.unwrapErr();
+  const code = contractCodeFromResultError(returned);
+  if (code !== null) {
+    throw new ContractError(code, { cause: returned });
+  }
+
+  throw new Error(`The contract returned an error: ${returned.message}`);
 }
 
 function isNotFound(error: unknown): boolean {
   return error instanceof ContractError && error.code === 1;
+}
+
+async function executeVoidWrite(
+  build: () => Promise<AssembledTransaction<Result<void>>>,
+  onPhase?: (phase: TxPhase) => void,
+): Promise<{ hash: string }> {
+  onPhase?.("simulating");
+
+  let tx: AssembledTransaction<Result<void>>;
+  try {
+    tx = await build();
+    unwrapResult(readSimulation(tx));
+  } catch (error) {
+    throw translateContractError(error);
+  }
+
+  try {
+    onPhase?.("awaiting_signature");
+    await tx.sign();
+
+    onPhase?.("submitting");
+    const sent = await tx.send({
+      onSubmitted: () => onPhase?.("confirming"),
+    });
+    unwrapResult(sent.result);
+
+    const hash =
+      sent.sendTransactionResponse?.hash ??
+      (tx.signed ? toHex(tx.signed.hash()) : "");
+    if (!hash) {
+      throw new Error("The transaction was confirmed without a transaction hash.");
+    }
+    return { hash };
+  } catch (error) {
+    throw translateContractError(error);
+  }
 }
 
 /** The pinned settlement token and community pool, from instance storage. */
@@ -224,7 +287,7 @@ export async function createEvent(
   try {
     tx = await getWriteClient(signer).create_event(toCreateEventArgs(input));
     // Surfaces a contract rejection before the wallet is ever opened.
-    readSimulation(tx);
+    unwrapResult(readSimulation(tx));
   } catch (error) {
     throw translateContractError(error);
   }
@@ -246,4 +309,105 @@ export async function createEvent(
   } catch (error) {
     throw translateContractError(error);
   }
+}
+
+/**
+ * Lock the event's exact bond amount for one participant.
+ *
+ * The contract remains authoritative for capacity, deadlines, duplicate
+ * reservations and the token transfer. Simulation runs before the wallet is
+ * opened, so a contract rejection cannot cost the user a signature.
+ */
+export async function reserve(
+  eventId: bigint,
+  signer: Signer,
+  onPhase?: (phase: TxPhase) => void,
+): Promise<{ hash: string }> {
+  return executeVoidWrite(
+    () =>
+      getWriteClient(signer).reserve({
+        event_id: eventId,
+        participant: signer.address,
+      }),
+    onPhase,
+  );
+}
+
+/** Cancel the connected participant's locked reservation. */
+export async function cancelReservation(
+  eventId: bigint,
+  signer: Signer,
+  onPhase?: (phase: TxPhase) => void,
+): Promise<{ hash: string }> {
+  return executeVoidWrite(
+    () =>
+      getWriteClient(signer).cancel_reservation({
+        event_id: eventId,
+        participant: signer.address,
+      }),
+    onPhase,
+  );
+}
+
+/** Check a participant in; the connected signer must be the event verifier. */
+export async function checkIn(
+  eventId: bigint,
+  participant: string,
+  signer: Signer,
+  onPhase?: (phase: TxPhase) => void,
+): Promise<{ hash: string }> {
+  return executeVoidWrite(
+    () =>
+      getWriteClient(signer).check_in({
+        event_id: eventId,
+        participant,
+      }),
+    onPhase,
+  );
+}
+
+/** Cancel an event; the connected signer must be its organizer. */
+export async function cancelEvent(
+  eventId: bigint,
+  signer: Signer,
+  onPhase?: (phase: TxPhase) => void,
+): Promise<{ hash: string }> {
+  return executeVoidWrite(
+    () => getWriteClient(signer).cancel_event({ event_id: eventId }),
+    onPhase,
+  );
+}
+
+/** Permissionless pull-refund for one locked reservation on a cancelled event. */
+export async function claimCancelledRefund(
+  eventId: bigint,
+  participant: string,
+  signer: Signer,
+  onPhase?: (phase: TxPhase) => void,
+): Promise<{ hash: string }> {
+  return executeVoidWrite(
+    () =>
+      getWriteClient(signer).claim_cancelled_event_refund({
+        event_id: eventId,
+        participant,
+      }),
+    onPhase,
+  );
+}
+
+/** Permissionless no-show settlement for one locked reservation. */
+export async function settleNoShow(
+  eventId: bigint,
+  participant: string,
+  signer: Signer,
+  onPhase?: (phase: TxPhase) => void,
+): Promise<{ hash: string }> {
+  return executeVoidWrite(
+    () =>
+      getWriteClient(signer).settle_no_show({
+        event_id: eventId,
+        participant,
+      }),
+    onPhase,
+  );
 }

@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { PolicyPreview } from "@/components/organizer/policy-preview";
+import { Button } from "@/components/ui/button";
 import { FormField, TextInput } from "@/components/ui/form-field";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { TxStatus, type TxState } from "@/components/tx/tx-status";
 import { createEvent, type CreateEventInput, type TxPhase } from "@/lib/contract";
 import { toStroops } from "@/lib/domain";
@@ -143,6 +146,30 @@ export default function NewEventPage() {
     return Number.isFinite(share) ? Math.max(0, Math.min(100, 100 - share)) : 0;
   }, [values.organizerShare]);
 
+  // The preview is fed from the same raw strings the form holds, parsed with
+  // the same integer helper the submit path uses. A value the parser rejects
+  // shows as "—" rather than as a guess.
+  const previewBond = useMemo(() => {
+    try {
+      const parsed = toStroops(values.bond);
+      return parsed > 0n ? parsed : null;
+    } catch {
+      return null;
+    }
+  }, [values.bond]);
+
+  const previewCapacity = useMemo(() => {
+    const parsed = Number(values.capacity);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }, [values.capacity]);
+
+  const previewShare = useMemo(() => {
+    const parsed = Number(values.organizerShare);
+    return Number.isInteger(parsed) && parsed >= 0 && parsed <= 100
+      ? parsed
+      : null;
+  }, [values.organizerShare]);
+
   const set = (key: keyof FormValues) => (event: { target: { value: string } }) => {
     setValues((previous) => ({ ...previous, [key]: event.target.value }));
   };
@@ -196,7 +223,7 @@ export default function NewEventPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-14 sm:px-8">
+    <main className="mx-auto w-full max-w-5xl px-5 py-14 sm:px-8">
       <Link
         className="text-sm font-semibold text-slate-400 transition hover:text-cyan-300"
         href="/organizer"
@@ -219,18 +246,19 @@ export default function NewEventPage() {
             Connect your Testnet wallet to create an event. You will sign one
             transaction; no funds leave your account.
           </p>
-          <button
-            className="mt-4 rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-200 disabled:opacity-60"
+          <Button
+            className="mt-4"
             disabled={status === "connecting"}
             onClick={() => void connect()}
             type="button"
           >
             {status === "connecting" ? "Connecting…" : "Connect Freighter"}
-          </button>
+          </Button>
         </div>
       ) : null}
 
-      <form className="mt-10 flex flex-col gap-8" onSubmit={onSubmit}>
+      <div className="mt-10 grid items-start gap-8 lg:grid-cols-[1.35fr_0.65fr]">
+      <form className="flex flex-col gap-8" onSubmit={onSubmit}>
         <fieldset
           className="flex flex-col gap-6 disabled:opacity-50"
           disabled={!canTransact || busy}
@@ -355,14 +383,24 @@ export default function NewEventPage() {
 
         <TxStatus state={tx} />
 
-        <button
-          className="self-start rounded-full bg-cyan-300 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canTransact || busy}
+        <SubmitButton
+          className="self-start"
+          disabled={!canTransact}
+          pending={busy}
+          pendingLabel="Creating…"
+          size="lg"
           type="submit"
         >
-          {busy ? "Creating…" : "Create event"}
-        </button>
+          Create event
+        </SubmitButton>
       </form>
+
+        <PolicyPreview
+          bondStroops={previewBond}
+          capacity={previewCapacity}
+          organizerShare={previewShare}
+        />
+      </div>
     </main>
   );
 }

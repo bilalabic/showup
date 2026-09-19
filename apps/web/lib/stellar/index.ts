@@ -36,4 +36,7 @@ export {
 
 export type { AccountAssets } from "./horizon";
 
+export { buildClaimWithTrustlineXdr } from "./claimable-balance";
+export type { BuildClaimOptions } from "./claimable-balance";
+
 export type { TxFailure, TxResult } from "./tx-result";
