@@ -1,0 +1,97 @@
+/**
+ * The contract's `#[contracterror]` codes, and the user-facing copy for each.
+ *
+ * These numbers are public ABI. They are never renumbered across an upgrade,
+ * and `lib/contract` matches on them BY CODE — never by message string.
+ */
+
+export enum ContractErrorCode {
+  NotFound = 1,
+  NotActive = 2,
+  AlreadyReserved = 3,
+  EventFull = 4,
+  NotLocked = 5,
+  CheckInNotOpen = 6,
+  CheckInWindowClosed = 7,
+  CancellationDeadlinePassed = 8,
+  SettlementTooEarly = 9,
+  InvalidBasisPoints = 10,
+  InvalidSchedule = 11,
+  InvalidAmount = 12,
+  Overflow = 13,
+  EventNotCancelled = 14,
+}
+
+/** Machine-readable name for each code, as declared in the contract. */
+const CONTRACT_ERROR_NAMES: Readonly<Record<ContractErrorCode, string>> = {
+  [ContractErrorCode.NotFound]: "NotFound",
+  [ContractErrorCode.NotActive]: "NotActive",
+  [ContractErrorCode.AlreadyReserved]: "AlreadyReserved",
+  [ContractErrorCode.EventFull]: "EventFull",
+  [ContractErrorCode.NotLocked]: "NotLocked",
+  [ContractErrorCode.CheckInNotOpen]: "CheckInNotOpen",
+  [ContractErrorCode.CheckInWindowClosed]: "CheckInWindowClosed",
+  [ContractErrorCode.CancellationDeadlinePassed]: "CancellationDeadlinePassed",
+  [ContractErrorCode.SettlementTooEarly]: "SettlementTooEarly",
+  [ContractErrorCode.InvalidBasisPoints]: "InvalidBasisPoints",
+  [ContractErrorCode.InvalidSchedule]: "InvalidSchedule",
+  [ContractErrorCode.InvalidAmount]: "InvalidAmount",
+  [ContractErrorCode.Overflow]: "Overflow",
+  [ContractErrorCode.EventNotCancelled]: "EventNotCancelled",
+};
+
+/**
+ * Plain-English copy shown to the user.
+ *
+ * Codes 2 and 14 describe OPPOSITE conditions — `NotActive` means the event has
+ * already been cancelled, `EventNotCancelled` means it is still active — so the
+ * two messages must never be interchangeable.
+ */
+const CONTRACT_ERROR_MESSAGES: Readonly<Record<ContractErrorCode, string>> = {
+  [ContractErrorCode.NotFound]:
+    "That event or reservation was not found on-chain.",
+  [ContractErrorCode.NotActive]:
+    "This event has been cancelled, so it can no longer be reserved, checked in or settled.",
+  [ContractErrorCode.AlreadyReserved]:
+    "You already hold a reservation for this event.",
+  [ContractErrorCode.EventFull]:
+    "The last seat was taken while your transaction was being sent. No bond was taken.",
+  [ContractErrorCode.NotLocked]:
+    "This bond has already been released — it was checked in, cancelled, refunded or settled.",
+  [ContractErrorCode.CheckInNotOpen]:
+    "Check-in has not opened yet for this event.",
+  [ContractErrorCode.CheckInWindowClosed]:
+    "The check-in window for this event has closed.",
+  [ContractErrorCode.CancellationDeadlinePassed]:
+    "The cancellation window has closed, so this reservation can no longer be cancelled.",
+  [ContractErrorCode.SettlementTooEarly]:
+    "This reservation cannot be settled until the check-in deadline has passed.",
+  [ContractErrorCode.InvalidBasisPoints]:
+    "The organizer and community shares must add up to exactly 100%.",
+  [ContractErrorCode.InvalidSchedule]:
+    "The schedule is out of order: the cancellation deadline, check-in window and start time do not line up.",
+  [ContractErrorCode.InvalidAmount]:
+    "The bond amount, capacity, title or venue is outside the range the contract accepts.",
+  [ContractErrorCode.Overflow]:
+    "The amounts in this request are too large for the contract to handle.",
+  [ContractErrorCode.EventNotCancelled]:
+    "This event is still active, so there is no cancelled-event refund to claim.",
+};
+
+/** Type guard for a number that is one of the contract's declared codes. */
+export function isContractErrorCode(code: number): code is ContractErrorCode {
+  return Object.prototype.hasOwnProperty.call(CONTRACT_ERROR_MESSAGES, code);
+}
+
+/** The machine-readable name for a code, or `"Unknown"` for anything else. */
+export function contractErrorName(code: number): string {
+  return isContractErrorCode(code) ? CONTRACT_ERROR_NAMES[code] : "Unknown";
+}
+
+/** User-facing copy for a code. Unknown codes still produce something readable. */
+export function contractErrorMessage(code: number): string {
+  if (isContractErrorCode(code)) {
+    return CONTRACT_ERROR_MESSAGES[code];
+  }
+  return `The contract rejected this call with error code ${code}.`;
+}

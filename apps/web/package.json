@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "smoke:stellar": "node scripts/smoke-test.mts"
+    "smoke:stellar": "node scripts/smoke-test.mts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@creit.tech/stellar-wallets-kit": "2.6.0",
@@ -16,7 +18,9 @@
     "@stellar/stellar-sdk": "17.1.0",
     "next": "16.3.5",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "showup-bond-client": "workspace:*",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -26,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.1"
   }
 }
