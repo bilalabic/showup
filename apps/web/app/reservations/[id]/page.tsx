@@ -4,8 +4,13 @@ import Link from "next/link";
 import { use, useMemo } from "react";
 
 import { QrPass } from "@/components/qr/qr-pass";
+import { Button } from "@/components/ui/button";
+import { Money } from "@/components/ui/money";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/states";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { getEvent, getReservation } from "@/lib/contract";
-import { fromStroops, type EventView, type ReservationView } from "@/lib/domain";
+import type { EventView, ReservationView } from "@/lib/domain";
 import { reservationBucket } from "@/lib/domain/reservation-buckets";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { encodePass } from "@/lib/qr";
@@ -62,6 +67,19 @@ function displayStatus(
   return "Bond locked · check-in is open";
 }
 
+/** The tone follows the money: green when a bond came back, amber when it did not. */
+function statusTone(
+  event: EventView,
+  reservation: ReservationView,
+): StatusTone {
+  if (reservation.status === "attended") return "positive";
+  if (reservation.status === "cancelled") return "neutral";
+  if (reservation.status === "refunded") return "neutral";
+  if (reservation.status === "no_show_settled") return "warning";
+  if (event.status === "cancelled") return "critical";
+  return "accent";
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-6 py-4">
@@ -102,12 +120,9 @@ export default function ReservationPage({
         <p className="mt-3 text-slate-400">
           Event identifiers are positive whole numbers.
         </p>
-        <Link
-          className="mt-8 inline-block rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold transition hover:border-cyan-300/60"
-          href="/reservations"
-        >
-          Back to reservations
-        </Link>
+        <Button asChild className="mt-8" variant="outline">
+          <Link href="/reservations">Back to reservations</Link>
+        </Button>
       </main>
     );
   }
@@ -125,14 +140,14 @@ export default function ReservationPage({
           The reservation and QR pass are read for the connected Testnet
           address. No signature is requested on this page.
         </p>
-        <button
-          className="mt-8 rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-200 disabled:opacity-60"
+        <Button
+          className="mt-8"
           disabled={status === "connecting"}
           onClick={() => void connect()}
           type="button"
         >
           {status === "connecting" ? "Connecting…" : "Connect Freighter"}
-        </button>
+        </Button>
       </main>
     );
   }
@@ -143,9 +158,10 @@ export default function ReservationPage({
         className="mx-auto w-full max-w-3xl px-5 py-14 sm:px-8"
         aria-label="Loading reservation"
       >
-        <div className="h-8 w-56 animate-pulse rounded-lg bg-white/10" />
-        <div className="mt-4 h-5 w-80 animate-pulse rounded-lg bg-white/5" />
-        <div className="mt-10 h-96 animate-pulse rounded-3xl bg-white/5" />
+        <Skeleton className="h-8 w-56 rounded-xl bg-white/8" />
+        <Skeleton className="mt-4 h-5 w-80 rounded-lg bg-white/5" />
+        <Skeleton className="mt-10 h-72 rounded-3xl bg-white/5" />
+        <Skeleton className="mt-4 h-80 rounded-3xl bg-white/5" />
       </main>
     );
   }
@@ -153,21 +169,12 @@ export default function ReservationPage({
   if (state.status === "error") {
     return (
       <main className="mx-auto w-full max-w-3xl px-5 py-20 sm:px-8">
-        <h1 className="text-3xl font-black tracking-tight">
-          Could not load the reservation
-        </h1>
-        <p className="mt-3 text-slate-400">
-          {state.error instanceof Error
-            ? state.error.message
-            : "Could not read this reservation from the contract."}
-        </p>
-        <button
-          className="mt-8 rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
-          onClick={state.reload}
-          type="button"
-        >
-          Try again
-        </button>
+        <ErrorState
+          error={state.error}
+          fallback="Could not read this reservation from the contract."
+          onRetry={state.reload}
+          title="Could not load the reservation"
+        />
       </main>
     );
   }
@@ -184,18 +191,12 @@ export default function ReservationPage({
           The connected address has no reservation for {event.title}.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            className="rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
-            href={`/events/${event.id}`}
-          >
-            View event
-          </Link>
-          <Link
-            className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold transition hover:border-cyan-300/60"
-            href="/reservations"
-          >
-            All reservations
-          </Link>
+          <Button asChild>
+            <Link href={`/events/${event.id}`}>View event</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/reservations">All reservations</Link>
+          </Button>
         </div>
       </main>
     );
@@ -226,12 +227,15 @@ export default function ReservationPage({
       </Link>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-xs text-slate-400">
+        <span className="num rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-xs text-slate-400">
           Event #{event.id.toString()}
         </span>
-        <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-xs font-bold text-cyan-200">
+        <StatusBadge
+          pulse={reservation.status === "locked" && event.status === "active"}
+          tone={statusTone(event, reservation)}
+        >
           {displayStatus(event, reservation, ledgerNow)}
-        </span>
+        </StatusBadge>
       </div>
 
       <h1 className="mt-6 text-4xl font-black leading-tight tracking-[-0.045em] sm:text-5xl">
@@ -239,12 +243,9 @@ export default function ReservationPage({
       </h1>
       <p className="mt-3 text-lg text-slate-400">{event.venue}</p>
 
-      <section className="mt-10 rounded-3xl border border-white/10 bg-slate-900/60 px-6 py-2">
+      <section className="glass mt-10 rounded-3xl px-6 py-2">
         <dl className="divide-y divide-white/10">
-          <Row
-            label="Bond"
-            value={`${fromStroops(reservation.amount)} USDC`}
-          />
+          <Row label="Bond" value={<Money stroops={reservation.amount} />} />
           <Row label="Reserved" value={formatMoment(reservation.reservedAt)} />
           <Row label="Event starts" value={formatMoment(event.startTime)} />
           <Row
@@ -259,7 +260,7 @@ export default function ReservationPage({
       </section>
 
       {hasActivePass && qrPayload ? (
-        <section className="mt-8 rounded-3xl border border-cyan-300/20 bg-cyan-300/5 p-6 sm:p-8">
+        <section className="glass mt-8 rounded-3xl border-cyan-300/25 p-6 sm:p-8">
           <div className="grid items-center gap-8 sm:grid-cols-[280px_1fr]">
             <QrPass payload={qrPayload} />
             <div>
@@ -302,11 +303,11 @@ export default function ReservationPage({
           </div>
           <div className="flex justify-between gap-2">
             <dt>Amount (stroops)</dt>
-            <dd>{reservation.amount.toString()}</dd>
+            <dd className="num">{reservation.amount.toString()}</dd>
           </div>
           <div className="flex justify-between gap-2">
             <dt>Ledger time</dt>
-            <dd>{ledgerNow}</dd>
+            <dd className="num">{ledgerNow}</dd>
           </div>
           <div className="flex justify-between gap-2">
             <dt>Network</dt>
