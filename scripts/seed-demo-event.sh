@@ -50,8 +50,16 @@ for tool in stellar curl sed date; do
   command -v "$tool" >/dev/null 2>&1 || die "$tool not found on PATH"
 done
 
-CONTRACT_ID="$(sed -n 's/^NEXT_PUBLIC_SHOWUP_CONTRACT_ID=//p' .env.example | tr -d '\r')"
-[ -n "$CONTRACT_ID" ] || die "could not read NEXT_PUBLIC_SHOWUP_CONTRACT_ID from .env.example"
+# The contract id lives in the generated bindings, written there by
+# scripts/deploy-testnet.sh. That is the same value the web app uses, so this
+# script can never drift from the deployment the UI talks to.
+BINDINGS_SRC="packages/showup-bond-client/src/index.ts"
+[ -f "$BINDINGS_SRC" ] \
+  || die "${BINDINGS_SRC} is missing; run ./scripts/deploy-testnet.sh first"
+
+CONTRACT_ID="$(sed -n 's/.*contractId:[[:space:]]*"\(C[A-Z2-7]\{55\}\)".*/\1/p' "$BINDINGS_SRC" | head -n1)"
+[ -n "$CONTRACT_ID" ] \
+  || die "could not read the contract id from ${BINDINGS_SRC}"
 
 NETWORK_ARGS=(
   --network "$NETWORK"
@@ -83,12 +91,13 @@ if [ "$FAST" = true ]; then
   CHECKIN_DEADLINE="$((NOW + 150))"
   SHAPE="fast — check-in closes in 2.5 minutes"
 else
-  # Check-in is already open, so attendance can be demonstrated immediately.
+  # Free cancellation is open right away, and check-in opens five minutes in —
+  # long enough to show the reserve flow and a cancellation first.
   CANCELLATION_DEADLINE="$((NOW + 300))"
   CHECKIN_START="$((NOW + 300))"
   START_TIME="$((NOW + 600))"
   CHECKIN_DEADLINE="$((NOW + 1800))"
-  SHAPE="standard — free cancellation for 5 minutes, check-in open for 25"
+  SHAPE="standard — free cancellation for 5 minutes, then check-in open for 25"
 fi
 
 echo "==> Contract:  ${CONTRACT_ID}"

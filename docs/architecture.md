@@ -13,14 +13,14 @@
 
 | Area | Decision | Why |
 |---|---|---|
-| Frontend | Next.js App Router + React + TypeScript | One repository for UI and API routes; fast Vercel deploy. |
+| Frontend | Next.js App Router + React + TypeScript | One repository for the browser UI; fast Vercel deploy. |
 | Styling | Tailwind CSS | Scaffolded by `create-next-app`; no custom component system during the hackathon. |
 | Package manager | pnpm workspace (`apps/*`) | Reproducible lockfile. |
 | Contract language | Rust + `soroban-sdk` 28 | Testnet runs protocol 28. |
 | Wasm target | `wasm32v1-none` | The only Wasm target the Stellar runtime supports. |
 | Network | Stellar Testnet only | Mainnet is explicitly out of scope. |
 | Wallet | Stellar Wallets Kit, Freighter as the guaranteed P0 path | Primary ecosystem integration; on the SCF Integration List. |
-| Local payments | TR Mock Anchor, SEP-1/10/12/38/6 | Satisfies the hackathon local-payment requirement as a Testnet simulation. |
+| Local payments | TR Mock Anchor, SEP-1/10/38/6 | Satisfies the hackathon local-payment requirement as a Testnet simulation. |
 | Contract builds on Windows | Run in WSL `Ubuntu-24.04` via the `win:*` scripts | No MSVC linker on the dev host; proc-macro crates need a host C toolchain. |
 
 ## Locked decision: Stellar Wallets Kit stays, despite its dependency weight

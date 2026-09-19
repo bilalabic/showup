@@ -1,20 +1,28 @@
 # ShowUp — P0 System Architecture
 
-> Design only. Nothing here has been implemented. Every version, address and
-> network parameter was verified against a primary source on 2026-09-19 — live
-> Testnet RPC, installed package source, crates.io/npm, or the Anchor itself.
+> This is the approved architecture, and it is now largely built: checkpoints
+> C1–C9 are implemented. The design below is what the code follows, so it stays
+> authoritative — but read it as a specification the implementation conforms to,
+> not as a plan for unwritten work. Checkpoint status lives in
+> **Implementation Plan**.
+>
+> Every version, address and network parameter was verified against a primary
+> source — live Testnet RPC, installed package source, crates.io/npm, or the
+> Anchor itself. Values carry the date they were verified.
 
 ## Context
 
-Phase 0 delivered a verified toolchain and an empty repository foundation: a
-pnpm workspace with a Next.js 16 app, a Cargo workspace with a 546-byte scaffold
-contract, WSL-routed build scripts, and a proven build → deploy → invoke chain on
-Testnet (`CDHTJZOO2ZROIR5CC76A3XXXQKWEROFNNA3ENTJPVJRYSNOZOMNQFIXF`). No product
-logic exists yet.
+Phase 0 delivered a verified toolchain and a repository foundation: a pnpm
+workspace with a Next.js 16 app, a Cargo workspace, WSL-routed build scripts,
+and a proven build → deploy → invoke chain on Testnet, first exercised with a
+546-byte scaffold contract.
 
-This plan designs the smallest production-minded architecture that can deliver
-the P0 demo inside the hackathon's effective ~26-hour build window. It does not
-implement anything.
+**The live deployment is `CCCDFM2MGKO5PEBS565O7FO2OL4CZYUFFRTQLUPPIIIL2JNCPUSUIRHM`.**
+Addresses and transaction evidence are recorded in `docs/deployments/testnet.md`,
+which is the single source of truth for them; this document does not repeat them.
+
+This document designs the smallest production-minded architecture that can
+deliver the P0 demo inside the hackathon's effective ~26-hour build window.
 
 The authority for product scope is `SHOWUP_HACKATHON_SPEC_REVISED.md`. Where this
 plan departs from that document on a *technical* decision, the departure is
@@ -44,11 +52,11 @@ Four load-bearing pieces:
 2. **Stellar Wallets Kit + Freighter** — the required ecosystem integration,
    behind a thin application-owned adapter so no Kit-specific call leaks into
    feature code.
-3. **TR Mock Anchor (SEP-1/10/12/38/6)** — the local-payment path, isolated in
+3. **TR Mock Anchor (SEP-1/10/38/6)** — the local-payment path, isolated in
    one module with its own asynchronous state machine. Its funding stage is
    **not** atomic with anything on-chain and is never presented as such.
-4. **Next.js Route Handlers** — used only where a browser genuinely cannot do the
-   work. Under the recommended design that is a very small surface.
+4. **Direct browser integration** — the Mock Anchor's verified CORS policy lets
+   SEP-1/10/38/6 run without a token-carrying application proxy.
 
 The defining choice is **no database in P0**. Event metadata short enough to
 matter (title, venue) lives on-chain; everything else is derived from contract
@@ -72,7 +80,7 @@ package source, or crates.io/npm. No version is carried from memory.
 | Rust | stable | 1.98.1, target `wasm32v1-none` | `rustc --version` | Only Wasm target the runtime supports |
 | JS SDK | `@stellar/stellar-sdk` | **17.1.0**, `engines.node >= 22.12.0` | npm + installed `.d.ts` | Current stable |
 | Wallet kit | `@creit.tech/stellar-wallets-kit` | **2.6.0** | npm + installed `.d.ts` | Required ecosystem integration |
-| Wallet | `@stellar/freighter-api` | **6.0.0** (transitive) | installed `.d.ts` | Guaranteed P0 path |
+| Wallet | `@stellar/freighter-api` | **6.0.0** (direct) | installed `.d.ts` | Guaranteed P0 path |
 | Frontend | Next.js / React / Tailwind | 16.3.5 / 19.2.8 / 4.3.3 | installed lockfile | Phase 0 scaffold |
 | Runtime | Node.js | 24.21.0 (floor 22.12.0) | `node --version` | SDK 17 engine requirement |
 | Settlement asset | Mock USDC | issuer `GBBD47IF…FLA5`, 7 decimals, `status="test"` | Anchor `stellar.toml` | Hackathon asset |
@@ -119,7 +127,6 @@ ShowUp/
 │  │  ├─ organizer/events/new/page.tsx     create event
 │  │  ├─ organizer/events/[id]/page.tsx    reservations + settlement
 │  │  ├─ organizer/events/[id]/scan/page.tsx   QR scanner
-│  │  └─ api/anchor/[...]/route.ts         Anchor CORS/secret proxy only
 │  ├─ components/
 │  │  ├─ ui/                               shadcn primitives
 │  │  ├─ wallet/                           connect button, network guard
@@ -292,8 +299,8 @@ per read, and the event page issues several.
 - **Public interface.** `discover()`, `getIndicativePrice()` (public, no auth),
   `authenticate(signer)`, `getFirmQuote()`, `startDeposit()`,
   `simulateMockBankTransfer()` (named so its nature cannot be misread),
-  `pollDeposit()`, `claimDeposit()` for the claimable-balance path, and a
-  `DepositMachine` exposing the states in **Anchor State Machine**.
+  `pollDeposit()`, and the pure `depositReducer()` exposing the states in
+  **Anchor State Machine**. Claim transaction assembly belongs to `lib/stellar`.
 - **No SEP-12 call.** The Anchor states that SEP-6 needs authentication only.
   Omitting it removes a round trip and any appearance of collecting real KYC
   data.
@@ -1043,7 +1050,7 @@ intentional: a transaction id is a public reference, a bearer token is not.
 ### Boundaries
 
 `simulate-bank-transfer` is named `simulateMockBankTransfer()` in code, gated by
-`ENABLE_DEMO_TOOLS`, and labelled in the UI as a Testnet simulation step. It is a
+`NEXT_PUBLIC_ENABLE_DEMO_TOOLS`, and labelled in the UI as a Testnet simulation step. It is a
 Mock-Anchor convenience endpoint — not a standard SEP-6 endpoint, not a banking
 API — and the README says so in those words. Its request body is
 `{"amount":"150.00"}`; its response body is undocumented, so the client treats the
@@ -1169,7 +1176,7 @@ weight, not bundle weight. The root entry is only `export * from "./kit.js"` plu
 utils; it never imports WalletConnect, Ledger, Trezor, Solana or NEAR. Only
 `./modules/utils`'s `defaultModules()` instantiates the wallet set. Registering
 `FreighterModule` explicitly, as above, keeps all of it out of the graph. The
-supply-chain surface remains real and is noted in `docs/SECURITY.md`; the
+supply-chain surface remains real and is carried into `docs/SECURITY.md` at C12; the
 shipped-bundle concern does not survive contact with the code.
 
 ### Network-change detection
@@ -1257,7 +1264,7 @@ can be down at 11:00 on submission day.
 ### The one thing kept from Option B
 
 `issuedAt` is included and the scanner warns if the pass is more than a few
-minutes old. This is **labelled in the code and in `docs/SECURITY.md` as a UI
+minutes old. This is **labelled in the code, and in the scanner UI, as a UI
 hint, not a control** — it slightly discourages casual screenshot sharing and
 costs nothing. It is never a reason to accept or reject a check-in on its own,
 and the organizer can always override it.
@@ -1341,23 +1348,16 @@ confirmation step. A participant must never learn the no-show rule after funding
 
 ### API routes
 
-Only what a browser cannot do:
+No Anchor proxy routes are needed. Verified again at C8 from a browser origin:
+the Mock Anchor returns `Access-Control-Allow-Origin: *`, and authenticated GET
+and POST preflights allow both `Content-Type` and `Authorization`. SEP-1/10/38/6
+therefore run directly from the browser. No server route ever receives the
+SEP-10 bearer token.
 
-```text
-GET  /api/anchor/toml          SEP-1 fetch, server-side (CORS)
-POST /api/anchor/auth          SEP-10 token exchange if the Anchor blocks browser origins
-GET  /api/anchor/tx/[id]       SEP-6 status poll proxy
-POST /api/anchor/tx/[id]/simulate-bank-transfer   demo-only, gated by ENABLE_DEMO_TOOLS
-```
-
-All four are thin proxies, and **three of them may not be needed at all**. The
-Anchor's CORS policy from a browser origin is the only architecture question left
-open — it was verified reachable server-side but not cross-origin. If it sends
-permissive headers, `/api/anchor/toml`, `/auth` and `/tx/[id]` are deleted and the
-browser calls it directly. This is a ten-minute check at the start of C8 and it
-changes only the file count.
-
-No route handler ever holds a key, signs anything, or writes financial state.
+The mock-only `simulate-bank-transfer` control is gated in the client by
+`NEXT_PUBLIC_ENABLE_DEMO_TOOLS=false` and labelled explicitly as a Testnet
+simulation. This flag prevents accidental UI exposure; it is not presented as a
+security boundary for a public Testnet sandbox endpoint.
 
 ---
 
@@ -1462,13 +1462,11 @@ create, check-in and cancel-event. There is no server hot wallet.
 
 ### Server-enforced
 
-The only server surface is the Anchor proxy. It holds no keys and no financial
-state. `ENABLE_DEMO_TOOLS` gates the `simulate-bank-transfer` route and defaults
-to `false`. The SEP-10 JWT lives in memory for the session and is never written
-to `localStorage`, never logged, and never rendered — including in the debug
-panel. Rate limiting is a simple per-IP counter on the proxy routes; the surface
-is small and the exposure is a public Testnet mock, so this is proportionate
-rather than elaborate.
+There is no application server surface in P0: the contract is called directly
+and the Mock Anchor's CORS policy allows the browser flow. The SEP-10 JWT lives
+in memory for the session and is never written to web storage, never logged, and
+never rendered — including in the debug panel. `NEXT_PUBLIC_ENABLE_DEMO_TOOLS`
+only controls whether the labelled Testnet simulation button is shown.
 
 ### UI safeguards — explicitly not security
 
@@ -1556,7 +1554,7 @@ later client call resets it.
 | `lib/domain` | amount ↔ 7-decimal string round-trip; bps split matches the contract exactly; predicates at `deadline - 1`, `deadline`, `deadline + 1`; Zod schemas reject hostile event titles |
 | `lib/anchor` | SEP-10 challenge validation rejects wrong home domain, wrong server signature, non-zero sequence; deposit status transitions; quote expiry; `pending_trust` detection |
 | `lib/stellar` | RPC result → `TxResult` mapping including simulation-failure and restore-required |
-| `lib/contract` | contract error code → domain error mapping, all 12 codes |
+| `lib/contract` | contract error code → domain error mapping, all 14 codes |
 | `lib/qr` | payload round-trip; malformed, oversized and wrong-version payloads rejected |
 
 All from recorded fixtures. No unit test touches the live network.
@@ -1630,7 +1628,7 @@ than no-oping.
 | C5 | Wallet adapter + connect + network guard | 7–9 | `lib/wallet`, `components/wallet` | C4 | Freighter connects on Testnet; mainnet blocked | `pnpm dev` | fall back to `@stellar/freighter-api` directly behind the same port — see Fallbacks |
 | C6 | Contract facade + organizer create-event page | 9–11 | `lib/contract`, `lib/domain`, `/organizer/events/new` | C5 | event created from the browser, visible on `/events/[id]` | `pnpm dev` | create events via CLI and demo read-only |
 | C7 | Trustline + balances + reserve from the UI | 11–13 | `lib/stellar`, `/wallet`, `/events/[id]` | C6 | participant locks a real bond; hash recorded | `pnpm dev` | — |
-| C8 | Anchor: SEP-1/10/38/6 deposit + `simulate-bank-transfer` | 13–17 | `lib/anchor`, `/wallet`, `/api/anchor/*` | C7 | TRY → USDC lands in the participant wallet | `pnpm dev` | pre-fund the wallet and demo the Anchor UI against recorded evidence — see Fallbacks |
+| C8 | Anchor: SEP-1/10/38/6 deposit + `simulate-bank-transfer` | 13–17 | `lib/anchor`, `/wallet` | C7 | TRY → USDC lands in the participant wallet | `pnpm dev` | pre-fund the wallet and demo the Anchor UI against recorded evidence — see Fallbacks |
 | C9 | QR pass + scanner + `check_in` | 17–19 | `lib/qr`, `/reservations/[id]`, `/organizer/events/[id]/scan` | C8 | two-device attendance refund works | `pnpm dev` | organizer confirms from a list instead of a scan; contract path is identical |
 | C10 | No-show settlement + event cancellation + demo fixtures | 19–21 | `/organizer/events/[id]`, `scripts/seed-demo-event.sh` | C9 | both settlement paths demonstrated; hashes recorded | `./scripts/seed-demo-event.sh` | settle via CLI, show Explorer |
 | C11 | Error states, debug panel, Vercel deploy | 21–23 | `components/tx`, `components/debug` | C10 | fresh clone → documented setup → working app | `pnpm verify` | — |
@@ -1765,7 +1763,7 @@ Only risks that are actually still open after this plan.
 | ~~`signAuthEntry` requirement~~ **CLOSED** | Would have added a second wallet prompt to reserve. | Not needed: in every ShowUp write the authorizing address is the transaction source, so source-account credentials cover it. |
 | ~~Storage TTL values~~ **CLOSED** | An archived `Reservation` with a bond behind it would be the worst failure in the product. | Live floor measured at **120,960 ledgers (~7 days)**, ceiling 3,110,400 (~180 days), 17,280 ledgers/day. Policy fixed at threshold 30 days / extend-to 90 days, applied on every write including creation, clamped against `env.storage().max_ttl()`. Persistent storage only — temporary entries are deleted, not archived. Covered by a ledger-advancing test. |
 | **Push refund on `check_in`** | A participant who deletes their USDC trustline after reserving makes the organizer's check-in transaction revert. | Accepted, documented, and recoverable on rescan — full reasoning in **Contract API**. Not stuck funds, and no payout is batched across participants. |
-| **Mock Anchor CORS** | Determines whether the four Route Handlers exist or zero. | Verify from a browser before C8. Either outcome is small; only the file count changes. |
+| ~~Mock Anchor CORS~~ **CLOSED** | Determined whether proxy Route Handlers were needed. | Verified at C8: public endpoints return `Access-Control-Allow-Origin: *`; authenticated GET/POST preflights allow `Content-Type,Authorization`. The browser calls the Anchor directly and `app/api/anchor` does not exist. |
 | **Hackathon rules are not published** | The submission deadline, judging criteria, required README contents, whether a demo video is mandatory, and whether Stellar Skill paths must be listed are **absent from every public source**. Rise In states the shortlisting criteria "will be shared with participants before the submission deadline". The requirements this project builds against come from `SHOWUP_HACKATHON_SPEC_REVISED.md`, which is our own document, not a citable source. | The specification already lists these as opening-briefing questions. Ask them in hour 0 and record the answers. The plan is deliberately conservative — submitting early with full evidence satisfies any stricter rule that turns up. |
 | **"Wallets Kit alone" may be judged weak** | The hackathon's partner page says any protocol from the list or the SCF Integration List qualifies, and Stellar Wallets Kit is a row in that list — but the same page says the strongest projects combine **Anchor + Protocol**, "what the juries look for as a core feature". | ShowUp already does both: Mock Anchor *and* Wallets Kit *and* a custom Soroban contract, all load-bearing. Confirm the interpretation at the briefing rather than adding a second integration. |
 | **Anchor limit contradiction** | `/health` says 50–3,000 TRY; `/sep6/info` says 0.5–300. Hard-coding either could block a valid demo amount. | No client-side bound. Guidance text uses the `/health` figures; the server's error is shown verbatim. Demo bond of 100–250 TRY sits safely inside both readings once converted. |

@@ -4,12 +4,18 @@
 
 Rise In × Stellar Pro Hackathon Türkiye 2026 — **Genesis** track — **Stellar Testnet**.
 
-> **Status: C5 — Testnet wallet connection and network guard complete.**
+> **Status: C7–C9 implemented; live wallet acceptance pending.**
 > The complete Soroban bond lifecycle is implemented, covered by 58 contract
 > tests, deployed on Testnet, and exposed through generated TypeScript bindings.
-> The Next.js app now connects through Stellar Wallets Kit + Freighter behind an
-> application-owned wallet port, blocks non-Testnet sessions, and resets safely
-> when the active account changes. Contract-backed organizer flows begin at C6.
+> The Next.js app includes wallet, contract-data, event, organizer and balance
+> pages. The participant reserve flow now checks account assets, handles the
+> USDC trustline inline, repeats the bond policy before signing, and reports the
+> confirmed Testnet transaction. `/wallet` now drives the isolated
+> SEP-1/10/38/6 Anchor client through pricing, authentication, quoting, deposit
+> instructions, polling, reload recovery and claimable-balance recovery. C9 adds
+> participant reservation passes, retention-aware organizer reservation lists,
+> camera/manual QR verification and explicit wallet-signed check-in. QR data is
+> an identifier only; current contract state remains authoritative.
 
 ---
 
@@ -49,6 +55,12 @@ This is important and is stated the same way in the UI, the demo and the pitch.
 
 No real money moves. No real KYC is performed. Mainnet is out of scope.
 
+The funding flow calls one endpoint, `simulate-bank-transfer`, that stands in for
+a bank payment. It is a **Mock Anchor convenience endpoint — not a standard SEP-6
+endpoint and not a banking API** — and the app labels it as a Testnet simulation
+wherever it appears. The Anchor stage is asynchronous and is **not** atomic with
+the Soroban settlement; the two are shown as separate steps everywhere.
+
 ---
 
 ## Architecture (target)
@@ -61,7 +73,7 @@ No real money moves. No real KYC is performed. Mainnet is out of scope.
              ┌─────────────┴─────────────┐
              ▼                           ▼
    Stellar Wallets Kit             Mock Anchor
-     + Freighter              SEP-1/10/12/38/6
+     + Freighter                SEP-1/10/38/6
              │                           │
              └─────────────┬─────────────┘
                            ▼
@@ -88,11 +100,11 @@ Wallet Connection Layers). The guaranteed P0 wallet path is Freighter.
 
 ```
 ShowUp/
-├─ apps/web/               Next.js App Router frontend + API routes
+├─ apps/web/               Next.js App Router frontend
 ├─ contracts/showup-bond/  Soroban contract (Rust)
 ├─ packages/showup-bond-client/ generated TypeScript contract bindings
 ├─ scripts/                deploy / seed / smoke-test tooling
-├─ docs/                   architecture, audit, skills evidence, demo script
+├─ docs/                   architecture, contract, deployment evidence, skills, audit
 ├─ Cargo.toml              Rust workspace
 ├─ pnpm-workspace.yaml     pnpm workspace
 └─ .env.example            environment template — never commit a real .env
@@ -147,7 +159,7 @@ pnpm win:contracts:test
 pnpm win:contracts:build
 ```
 
-Run everything the way CI would:
+Run the whole pipeline:
 
 ```bash
 pnpm verify
@@ -204,5 +216,5 @@ Filled in as the build progresses.
 
 - The app never requests or stores a user's secret key. All signing happens in the wallet.
 - `.env` files are git-ignored; `.env.example` is the only environment file in the repository.
-- `ENABLE_DEMO_TOOLS` must be `false` outside the Testnet demo.
+- `NEXT_PUBLIC_ENABLE_DEMO_TOOLS` must be `false` outside the Testnet demo.
 - Testnet only. No mainnet deployment.

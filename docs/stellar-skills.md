@@ -23,15 +23,18 @@ Verified on 2026-09-19 against the upstream repository. The `skills/` directory
 upstream contains exactly: `agentic-payments`, `assets`, `cross-chain`, `dapp`,
 `data`, `smart-contracts`, `standards`, `zk-proofs`.
 
-### Modules planned for ShowUp
+### Modules used by ShowUp
 
-| Skill path | ShowUp use | Used so far |
+All five were used. This is the list the hackathon submission requires, and each
+row names the code it shaped.
+
+| Skill path | ShowUp use | Where it shows up |
 |---|---|---|
-| `skills/smart-contracts/SKILL.md` | Soroban project setup, contract anatomy, `wasm32v1-none` target, authorization, storage/TTL, tests. | **Yes — Phase 0.** Source of the Cargo profile and crate-type setup. |
-| `skills/standards/SKILL.md` | SEP-1/6/10/12/38 roles, Anchor flow, standards terminology. | Not yet |
-| `skills/assets/SKILL.md` | Mock USDC issuer, trustlines, Stellar Asset Contract, token precision. | Not yet |
-| `skills/dapp/SKILL.md` | Wallets Kit / Freighter connection, signing, contract invocation. | Not yet |
-| `skills/data/SKILL.md` | RPC / Horizon queries, contract state and event reads, Explorer evidence. | Not yet |
+| `skills/smart-contracts/SKILL.md` | Soroban project setup, contract anatomy, `wasm32v1-none` target, authorization, storage/TTL, tests. | `contracts/showup-bond/` — the Cargo release profile and `crate-type`, the two-node `require_auth` tree in `reserve`, the persistent/instance storage split and TTL policy in `src/storage.rs`, and the `try_*` negative-test shape throughout `src/test/`. |
+| `skills/standards/SKILL.md` | SEP-1/10/38/6 roles, Anchor flow, standards terminology. | `apps/web/lib/anchor/` — `sep1.ts`, `sep10.ts`, `sep38.ts`, `sep6.ts` and the deposit state machine in `machine.ts`. |
+| `skills/assets/SKILL.md` | Mock USDC issuer, trustlines, Stellar Asset Contract, token precision. | `apps/web/lib/stellar/horizon.ts` (issuer pinning, `changeTrust`, balance reads), the SAC pinned at deploy in the contract constructor, and 7-decimal integer handling in `apps/web/lib/domain/amounts.ts`. |
+| `skills/dapp/SKILL.md` | Wallets Kit / Freighter connection, signing, contract invocation. | `apps/web/lib/wallet/` — the port, the Kit adapter and the provider — plus the simulate → sign → send → confirm pipeline in `apps/web/lib/contract/index.ts`. |
+| `skills/data/SKILL.md` | RPC / Horizon queries, contract state and event reads, Explorer evidence. | `apps/web/lib/stellar/rpc.ts`, `apps/web/lib/contract/event-log.ts` (retention-aware `getEvents` indexing), and the Explorer links in `docs/deployments/testnet.md`. |
 
 ### Modules deliberately NOT used
 

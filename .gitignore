@@ -55,3 +55,6 @@ yarn-error.log*
 # scripts/deploy-testnet.sh and rebuilt by `pnpm bindings:build`, which both
 # `pnpm verify` and `pnpm win:verify` run.
 /packages/*/dist/
+
+# Working agent prompts. Session notes, not part of the submission.
+/docs/design-upgrade-prompt.md
