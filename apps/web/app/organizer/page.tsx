@@ -1,14 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { m, useReducedMotion } from "motion/react";
 
+import { Button } from "@/components/ui/button";
+import { CapacityMeter } from "@/components/ui/capacity-meter";
+import { Money } from "@/components/ui/money";
+import { ConnectPrompt, EmptyState, ErrorState, LoadingRows } from "@/components/ui/states";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { listEvents } from "@/lib/contract";
-import { fromStroops } from "@/lib/domain";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { useWallet } from "@/lib/wallet/provider";
 
 export default function OrganizerPage() {
-  const { address, connect, status } = useWallet();
+  const { address } = useWallet();
+  const reduceMotion = useReducedMotion();
 
   const state = useAsyncData(
     // There is no off-chain index by design, so the organizer's events are
@@ -28,85 +34,94 @@ export default function OrganizerPage() {
     <main className="mx-auto w-full max-w-4xl px-5 py-14 sm:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-[-0.04em]">Your events</h1>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+            Organizer
+          </p>
+          <h1 className="mt-3 text-4xl font-black tracking-[-0.04em]">
+            Your events
+          </h1>
           <p className="mt-2 text-slate-400">
             Events you created with the connected wallet.
           </p>
         </div>
-        <Link
-          className="rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
-          href="/organizer/events/new"
-        >
-          Create event
-        </Link>
+        <Button asChild>
+          <Link href="/organizer/events/new">Create event</Link>
+        </Button>
       </div>
 
       <div className="mt-10">
         {!address ? (
-          <div className="rounded-2xl border border-dashed border-white/15 px-5 py-8 text-center">
-            <p className="text-sm text-slate-300">
-              Connect your Testnet wallet to see the events you organize.
-            </p>
-            <button
-              className="mt-4 rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold transition hover:border-cyan-300/60"
-              disabled={status === "connecting"}
-              onClick={() => void connect()}
-              type="button"
-            >
-              {status === "connecting" ? "Connecting…" : "Connect Freighter"}
-            </button>
-          </div>
+          <ConnectPrompt>
+            Connect your Testnet wallet to see the events you organize. Your
+            events are found by reading the contract, not a database.
+          </ConnectPrompt>
         ) : state.status === "loading" ? (
-          <div className="space-y-3">
-            <div className="h-24 animate-pulse rounded-2xl bg-white/5" />
-            <div className="h-24 animate-pulse rounded-2xl bg-white/5" />
-          </div>
+          <LoadingRows count={2} height="h-32" />
         ) : state.status === "error" ? (
-          <div className="rounded-2xl border border-rose-400/25 bg-rose-400/5 px-5 py-6">
-            <p className="text-sm text-rose-100">{state.error instanceof Error ? state.error.message : "Could not read events from the contract."}</p>
-            <button
-              className="mt-4 rounded-full border border-rose-300/30 px-5 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-400/10"
-              onClick={retry}
-              type="button"
-            >
-              Try again
-            </button>
-          </div>
+          <ErrorState
+            error={state.error}
+            fallback="Could not read events from the contract."
+            onRetry={retry}
+            title="Could not read your events"
+          />
         ) : state.data.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 px-5 py-10 text-center">
-            <p className="text-sm text-slate-300">
-              You have not created an event yet.
-            </p>
-            <Link
-              className="mt-4 inline-block rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
-              href="/organizer/events/new"
-            >
-              Create your first event
-            </Link>
-          </div>
+          <EmptyState
+            action={
+              <Button asChild>
+                <Link href="/organizer/events/new">Create your first event</Link>
+              </Button>
+            }
+            title="No events yet"
+          >
+            Nothing on this contract names the connected wallet as organizer.
+          </EmptyState>
         ) : (
           <ul className="space-y-3">
-            {state.data.map((event) => (
-              <li key={event.id.toString()}>
+            {state.data.map((event, index) => (
+              <m.li
+                animate={{ opacity: 1, y: 0 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                key={event.id.toString()}
+                transition={{
+                  delay: reduceMotion ? 0 : index * 0.05,
+                  duration: 0.4,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              >
                 <Link
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-900/60 px-5 py-5 transition hover:border-cyan-300/40"
-                  href={`/events/${event.id}`}
+                  className="group block rounded-3xl border border-white/10 bg-white/[0.02] p-5 transition-[border-color,background-color,transform,box-shadow] duration-(--duration-component) ease-(--ease-out-soft) hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-white/[0.05] hover:shadow-[0_24px_50px_-32px_rgba(103,232,249,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 motion-reduce:hover:translate-y-0"
+                  href={`/organizer/events/${event.id}`}
                 >
-                  <div>
-                    <p className="text-lg font-bold">{event.title}</p>
-                    <p className="mt-1 text-sm text-slate-400">{event.venue}</p>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-lg font-black tracking-tight">
+                        {event.title}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {event.venue}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {event.status === "cancelled" ? (
+                        <StatusBadge tone="critical">Cancelled</StatusBadge>
+                      ) : event.reservedCount >= event.capacity ? (
+                        <StatusBadge tone="warning">Full</StatusBadge>
+                      ) : (
+                        <StatusBadge tone="positive">Active</StatusBadge>
+                      )}
+                      <p className="text-right text-base font-black text-cyan-300">
+                        <Money stroops={event.bondAmount} />
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono text-sm font-bold text-cyan-300">
-                      {fromStroops(event.bondAmount)} USDC
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      {event.reservedCount} of {event.capacity} reserved
-                      {event.status === "cancelled" ? " · cancelled" : ""}
-                    </p>
+                  <div className="mt-5">
+                    <CapacityMeter
+                      capacity={event.capacity}
+                      reserved={event.reservedCount}
+                    />
                   </div>
                 </Link>
-              </li>
+              </m.li>
             ))}
           </ul>
         )}

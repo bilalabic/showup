@@ -1,27 +1,127 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   ShowUp design tokens.
+
+   The app renders a single dark theme, so the dark values live directly in
+   `:root`. There is no `.dark` class and no theme switcher to keep in sync.
+   --------------------------------------------------------------------------- */
+
 :root {
+  /* Surfaces and text */
   --background: #020617;
   --foreground: #f8fafc;
+  --card: #0b1222;
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+
+  /* The one vibrant accent. Everything else stays calm. */
+  --primary: #67e8f9;
+  --primary-foreground: #020617;
+
+  --secondary: #ffffff14;
+  --secondary-foreground: #e2e8f0;
+  --muted: #ffffff0d;
+  --muted-foreground: #94a3b8;
+  --accent: #ffffff14;
+  --accent-foreground: #f8fafc;
+  --destructive: #fb7185;
+
+  --border: #ffffff1f;
+  --input: #ffffff1f;
+  --ring: #67e8f9;
+
+  --radius: 0.875rem;
+
+  /* Motion scale. Micro-interactions stay under a fifth of a second so the UI
+     never feels like it is waiting on itself; celebratory moments are capped. */
+  --duration-micro: 180ms;
+  --duration-component: 380ms;
+  --duration-celebrate: 700ms;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
+/* ---------------------------------------------------------------------------
+   Utilities
+   --------------------------------------------------------------------------- */
+
+/**
+ * Every rendered amount uses this. Proportional digits change width as they
+ * change value, which makes a counting animation jitter and a table of bonds
+ * fail to line up.
+ */
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
+
+/** Selective glassmorphism: header, dialogs and a few key cards only. */
+@utility glass {
+  background-color: color-mix(in oklab, var(--card) 72%, transparent);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--border);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.06),
+    0 24px 60px -30px rgb(0 0 0 / 0.9);
+}
+
+/** A faint grain that stops large dark fields from banding. */
+@utility grain {
+  position: relative;
+}
+
+/* ---------------------------------------------------------------------------
+   Landing decoration
+   --------------------------------------------------------------------------- */
 
 .hero-grid {
   background-image:
@@ -33,4 +133,79 @@ a {
 
 .hero-glow {
   background: rgba(34, 211, 238, 0.22);
+}
+
+.grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* ---------------------------------------------------------------------------
+   Accessibility
+
+   A single global guard so that any animation added later — CSS or JS driven —
+   degrades to a static state. Motion-driven components additionally check
+   `useReducedMotion()` so they render their resolved state rather than an
+   unplayed first frame.
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Keyframes used by the vendored Magic UI pieces. Both animate a transform
+   only, and both are neutralised by the reduced-motion guard above.
+   --------------------------------------------------------------------------- */
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  60%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes beam-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Hero reveal.
+
+   Deliberately CSS rather than JavaScript: the landing headline is the first
+   thing anyone reads, and it has to be legible with scripting disabled or
+   still loading. A CSS animation with `both` fill also means the element never
+   reserves less space than it finally occupies, so nothing below it shifts.
+   --------------------------------------------------------------------------- */
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal {
+  animation: reveal-up 0.62s var(--ease-out-soft) both;
 }

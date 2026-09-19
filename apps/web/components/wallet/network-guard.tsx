@@ -11,7 +11,7 @@ export function NetworkGuard() {
 
   return (
     <div
-      className="border-b border-amber-300/30 bg-amber-300 px-4 py-3 text-slate-950"
+      className="sticky top-0 z-50 border-b border-amber-300/30 bg-amber-300 px-4 py-3 text-slate-950"
       role="alert"
     >
       <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
@@ -20,7 +20,7 @@ export function NetworkGuard() {
           continuing; all transaction actions are blocked.
         </p>
         <button
-          className="shrink-0 rounded-full border border-slate-950/30 px-4 py-1.5 text-sm font-bold transition hover:bg-slate-950 hover:text-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950"
+          className="min-h-11 shrink-0 rounded-full border border-slate-950/30 px-5 text-sm font-bold transition-[background-color,color,transform] duration-(--duration-micro) hover:bg-slate-950 hover:text-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950 active:scale-[0.97] motion-reduce:active:scale-100"
           onClick={() => void refresh()}
           type="button"
         >
