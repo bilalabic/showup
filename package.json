@@ -22,11 +22,12 @@
     "contracts:build": "stellar contract build",
     "verify": "pnpm preflight && pnpm bindings:build && pnpm lint && pnpm build && pnpm typecheck && pnpm contracts:fmt:check && pnpm contracts:clippy && pnpm contracts:test && pnpm contracts:build",
     "smoke:stellar": "pnpm --filter @showup/web smoke:stellar",
-    "win:contracts:fmt:check": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cd /mnt/c/Users/bilal/projects/ShowUp && cargo fmt --all -- --check\"",
-    "win:contracts:clippy": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cd /mnt/c/Users/bilal/projects/ShowUp && cargo clippy --all-targets -- -D warnings\"",
-    "win:contracts:test": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cd /mnt/c/Users/bilal/projects/ShowUp && cargo test --workspace\"",
-    "win:contracts:build": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cd /mnt/c/Users/bilal/projects/ShowUp && stellar contract build\"",
+    "win:contracts:fmt:check": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cargo fmt --all -- --check\"",
+    "win:contracts:clippy": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cargo clippy --all-targets -- -D warnings\"",
+    "win:contracts:test": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cargo test --workspace\"",
+    "win:contracts:build": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"stellar contract build\"",
     "win:verify": "pnpm preflight && pnpm bindings:build && pnpm lint && pnpm build && pnpm typecheck && pnpm win:contracts:fmt:check && pnpm win:contracts:clippy && pnpm win:contracts:test && pnpm win:contracts:build",
-    "preflight": "node scripts/preflight.mjs"
+    "preflight": "node scripts/preflight.mjs",
+    "win:contracts:fmt": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cargo fmt --all\""
   }
 }
