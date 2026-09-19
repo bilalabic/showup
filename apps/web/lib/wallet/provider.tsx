@@ -43,6 +43,12 @@ export type WalletContextValue = WalletState & {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   refresh: () => Promise<void>;
+  /**
+   * Signs through the provider's own wallet instance. Feature code must use
+   * this rather than constructing an adapter of its own, so that every
+   * signature goes through the same connection and network guard.
+   */
+  signTransaction: (xdr: string) => Promise<string>;
 };
 
 type WalletProviderProps = {
@@ -254,6 +260,22 @@ export function WalletProvider({ children, wallet }: WalletProviderProps) {
     };
   }, [applySnapshot, commit, state.address, state.status]);
 
+  const signTransaction = useCallback(async (xdr: string) => {
+    try {
+      return await walletRef.current.signTransaction(xdr);
+    } catch (error) {
+      const walletError = isWalletError(error) ? error : toWalletError(error);
+
+      // A wrong-network result at signing time must also move the UI into the
+      // blocking state, not just fail this one call.
+      if (walletError.kind === "wrong_network") {
+        commit(stateFromError(walletError, stateRef.current.address));
+      }
+
+      throw walletError;
+    }
+  }, [commit]);
+
   const value = useMemo<WalletContextValue>(
     () => ({
       ...state,
@@ -264,8 +286,9 @@ export function WalletProvider({ children, wallet }: WalletProviderProps) {
       connect,
       disconnect,
       refresh,
+      signTransaction,
     }),
-    [connect, disconnect, refresh, state],
+    [connect, disconnect, refresh, signTransaction, state],
   );
 
   return (

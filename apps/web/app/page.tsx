@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="relative isolate flex-1 overflow-hidden">
@@ -29,6 +31,21 @@ export default function Home() {
             <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
               Testnet only
             </span>
+          </div>
+
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link
+              className="rounded-full bg-cyan-300 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+              href="/organizer/events/new"
+            >
+              Create an event
+            </Link>
+            <Link
+              className="rounded-full border border-white/15 px-6 py-3 text-sm font-semibold text-white transition hover:border-cyan-300/60 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+              href="/organizer"
+            >
+              Your events
+            </Link>
           </div>
         </div>
 

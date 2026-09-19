@@ -51,7 +51,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                   </span>
                 </span>
               </Link>
-              <ConnectButton />
+              <div className="flex items-center gap-2 sm:gap-5">
+                <Link
+                  className="rounded-full px-3 py-2 text-sm font-semibold text-slate-300 transition hover:text-cyan-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                  href="/wallet"
+                >
+                  Wallet
+                </Link>
+                <Link
+                  className="rounded-full px-3 py-2 text-sm font-semibold text-slate-300 transition hover:text-cyan-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                  href="/organizer"
+                >
+                  Organizer
+                </Link>
+                <ConnectButton />
+              </div>
             </div>
           </header>
           {children}
