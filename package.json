@@ -1,0 +1,32 @@
+{
+  "name": "showup",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Programmable attendance commitment bonds on Stellar (Soroban) — Rise In x Stellar Pro Hackathon Turkiye 2026, Genesis track.",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @showup/web dev",
+    "build": "pnpm --filter @showup/web build",
+    "start": "pnpm --filter @showup/web start",
+    "lint": "pnpm --filter @showup/web lint",
+    "typecheck": "pnpm --filter @showup/web typecheck",
+    "bindings:build": "pnpm --filter showup-bond-client build",
+    "contracts:fmt": "cargo fmt --all",
+    "contracts:fmt:check": "cargo fmt --all -- --check",
+    "contracts:clippy": "cargo clippy --all-targets -- -D warnings",
+    "contracts:test": "cargo test --workspace",
+    "contracts:build": "stellar contract build",
+    "verify": "pnpm preflight && pnpm bindings:build && pnpm lint && pnpm build && pnpm typecheck && pnpm contracts:fmt:check && pnpm contracts:clippy && pnpm contracts:test && pnpm contracts:build",
+    "smoke:stellar": "pnpm --filter @showup/web smoke:stellar",
+    "win:contracts:fmt:check": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cd /mnt/c/Users/bilal/projects/ShowUp && cargo fmt --all -- --check\"",
+    "win:contracts:clippy": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cd /mnt/c/Users/bilal/projects/ShowUp && cargo clippy --all-targets -- -D warnings\"",
+    "win:contracts:test": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cd /mnt/c/Users/bilal/projects/ShowUp && cargo test --workspace\"",
+    "win:contracts:build": "wsl.exe -d Ubuntu-24.04 -- bash -lc \"cd /mnt/c/Users/bilal/projects/ShowUp && stellar contract build\"",
+    "win:verify": "pnpm preflight && pnpm bindings:build && pnpm lint && pnpm build && pnpm typecheck && pnpm win:contracts:fmt:check && pnpm win:contracts:clippy && pnpm win:contracts:test && pnpm win:contracts:build",
+    "preflight": "node scripts/preflight.mjs"
+  }
+}

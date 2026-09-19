@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = ["contracts/*"]
+
+[workspace.dependencies]
+# soroban-sdk major version tracks the Stellar protocol version.
+# Verified 2026-09-19: Testnet RPC getVersionInfo reports protocolVersion 28,
+# and soroban-sdk 28.0.0 is the current stable release on crates.io.
+soroban-sdk = "28"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+
+# Keeps contract logs available while debugging on Testnet.
+[profile.release-with-logs]
+inherits = "release"
+debug-assertions = true
