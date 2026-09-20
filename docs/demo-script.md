@@ -84,7 +84,7 @@ exposing secrets.
 | Browser-created event | `329cf218…4e9dce` (event 18) |
 | Anchor deposit id + Stellar payment | `sep_c3awgubgw3jk1sh4owp5` · `f66e2f17…d05c56fd` |
 | Reserve | `f53c2122…be717843` (event 18) |
-| Check-in/refund | Pending |
+| Check-in/refund | `4bb91c25…32897fd6` (event 18) |
 | No-show settlement | `e17cfd91…fb930d350` (event 10, CLI-signed) |
 | Reservation cancellation | Pending |
 | Event cancellation + pulled refund | Pending |

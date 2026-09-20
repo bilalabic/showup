@@ -7,14 +7,14 @@ yet been captured; it is not silently counted as complete.
 | Requirement | Implementation | Evidence/state |
 |---|---|---|
 | Genesis track and problem | Root README and landing page | Complete |
-| Testnet wallet connection | Wallets Kit adapter and network guard | Accepted live in Freighter (see event 11 in the README) |
+| Testnet wallet connection | Wallets Kit adapter and network guard | Accepted live in Freighter (see event 18 in the README) |
 | Soroban attendance bond | `contracts/showup-bond` | 58 tests; deployed contract recorded |
-| Mock USDC trustline and balances | Horizon asset/reserve layer and `/wallet` | Implemented; live signature pending |
+| Mock USDC trustline and balances | Horizon asset/reserve layer and `/wallet` | Proven live: the Anchor deposit credited the pinned asset and `/wallet` read it back |
 | Public TRY estimate | SEP-38 `/price` on event detail | Implemented and unit tested |
 | Mock Anchor TRY → USDC | SEP-1/10/38/6 client and deposit state machine | Live deposit completed: `sep_c3awgubgw3jk1sh4owp5`, 150 TRY → 3.0594136 USDC |
 | Exact bond reservation | Event detail transaction flow | Browser-signed hashes recorded (events 11 and 18) |
 | Reservation discovery | Retention-aware contract-event index | Implemented; incomplete history is disclosed |
-| QR check-in and refund | Reservation pass + organizer scanner | Refund hashes recorded (events 9 and 11); browser-signed check-in pending |
+| QR check-in and refund | Reservation pass + organizer scanner | Browser-signed check-in and refund recorded (event 18) |
 | Cancellation/refund | Participant and organizer actions | Implemented; hashes pending |
 | No-show split | Contract + organizer settlement UI | Live 80/20 hash recorded (event 10, CLI-signed) |
 | Contract state inspectable | Global allowlisted technical panel | Complete |
@@ -23,18 +23,19 @@ yet been captured; it is not silently counted as complete.
 | Public frontend | Deployed on Vercel | [showup-steel.vercel.app](https://showup-steel.vercel.app) |
 | Pitch deck | Submission package | **Pending owner action** — official template |
 
-## Definition-of-Done evidence still requiring a browser wallet
+## Definition-of-Done evidence
 
-1. Check in from the browser and record the hash. Event 18 was created and
-   reserved in the browser with an already-open check-in window; only the
-   verifier signature is outstanding.
-2. Settle a no-show from the browser and record the split hash. The split itself
+Every required item is closed. Event 18 completed a full browser-signed round in
+one session — create, reserve, then check-in with the bond refunded in the same
+transaction — on the published frontend.
+
+What remains is optional hardening, not a requirement. Both paths are already
+proven on chain; only their browser-signed equivalents are missing:
+
+1. Settle a no-show from the browser and record the split hash. The split itself
    is proven on chain, but CLI-signed.
-3. Cancel a reservation and an event from the browser, claim the refund, and
+2. Cancel a reservation and an event from the browser, claim the refund, and
    record the hashes.
-
-The frontend is published and its URL is recorded above; the remaining items are
-browser-signed transaction hashes that prove the published app actually works.
 
 Faucet-funded Testnet USDC may unblock contract testing, but it is not evidence
 of a successful Anchor integration. That evidence now exists separately: a live

@@ -9,9 +9,10 @@ Rise In × Stellar Pro Hackathon Türkiye 2026 — **Genesis** track — **Stell
 
 > The P0 product is deployed and the bond lifecycle is verified on-chain — see
 > **Submission evidence** for the reserve, check-in refund and 80/20 no-show
-> settlement transactions, the browser-signed event creation and reservation,
-> and a Mock Anchor on-ramp that settled end to end. This README never presents
-> a pending item as complete.
+> settlement transactions, a Mock Anchor on-ramp that settled end to end, and a
+> complete browser-signed round on event 18 — create, reserve, then check-in
+> with the bond refunded in the same transaction. This README never presents a
+> pending item as complete.
 
 ### Try it in two minutes
 
@@ -363,7 +364,7 @@ steps, in order:
 | Matching refund (event 11) | [ee6512c079e255e1b173e051d79c44064c2cd9588f8d4261d6764ed71ae48d02](https://stellar.expert/explorer/testnet/tx/ee6512c079e255e1b173e051d79c44064c2cd9588f8d4261d6764ed71ae48d02) |
 | **Browser-signed create_event** (event 18, Freighter) | [329cf218a9e82b537347cd4495fbdaffe883d0696af1caf2958b0909464e9dce](https://stellar.expert/explorer/testnet/tx/329cf218a9e82b537347cd4495fbdaffe883d0696af1caf2958b0909464e9dce) |
 | **Browser-signed reserve** (event 18, Freighter) | [f53c212241c094d5ec105641920a72f9769e6012bc8eac165bae665dbe717843](https://stellar.expert/explorer/testnet/tx/f53c212241c094d5ec105641920a72f9769e6012bc8eac165bae665dbe717843) |
-| Browser-signed check-in (event 18) | **Pending owner signature** |
+| **Browser-signed check-in + refund** (event 18, Freighter) | [4bb91c258c0515d641d3237a5385854b6356e75b544afa512416f2c232897fd6](https://stellar.expert/explorer/testnet/tx/4bb91c258c0515d641d3237a5385854b6356e75b544afa512416f2c232897fd6) |
 | **Anchor deposit** — SEP-6 id `sep_c3awgubgw3jk1sh4owp5`, 150.00 TRY → 3.0594136 USDC (0.75 TRY fee), external ref `TRMA-S5X3-PLQV` | [f66e2f1745ba6c96fe3c943425fabdcad746d05fa897ea83cd5bd737d05c56fd](https://stellar.expert/explorer/testnet/tx/f66e2f1745ba6c96fe3c943425fabdcad746d05fa897ea83cd5bd737d05c56fd) |
 | Public demo URL | [showup-steel.vercel.app](https://showup-steel.vercel.app) |
 | Public repository | [github.com/bilalabic/showup](https://github.com/bilalabic/showup) |
