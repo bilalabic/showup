@@ -40,10 +40,10 @@ export function PolicyPreview({
 
   return (
     <aside className="glass sticky top-28 rounded-3xl p-6">
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">
         Published policy
       </p>
-      <h2 className="mt-3 text-lg font-black tracking-tight">
+      <h2 className="mt-3 text-lg font-bold tracking-tight">
         What a participant agrees to
       </h2>
 
@@ -51,7 +51,7 @@ export function PolicyPreview({
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
           Refundable bond
         </p>
-        <p className="mt-1 text-3xl font-black tracking-[-0.03em] text-white">
+        <p className="mt-1 text-3xl font-bold tracking-[-0.03em] text-white">
           {bondStroops !== null && bondStroops > 0n ? (
             <Money stroops={bondStroops} />
           ) : (
@@ -72,14 +72,14 @@ export function PolicyPreview({
 
         <div
           aria-hidden="true"
-          className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-indigo-400/70"
+          className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-status-community/75"
         >
           {/* `scaleX` rather than `width`: the organizer drags this value
               while typing, and animating a layout property would reflow the
               card on every keystroke. */}
           <m.span
             animate={{ scaleX: share / 100 }}
-            className="block h-full w-full origin-left bg-amber-300/80"
+            className="block h-full w-full origin-left bg-brand/80"
             initial={false}
             transition={
               reduceMotion
@@ -92,7 +92,7 @@ export function PolicyPreview({
         <dl className="mt-4 space-y-2 text-sm">
           <div className="flex items-baseline justify-between gap-4">
             <dt className="flex items-center gap-2 text-slate-400">
-              <span className="size-2 rounded-full bg-amber-300/80" />
+              <span className="size-2 rounded-full bg-brand/80" />
               You ({share}%)
             </dt>
             <dd className="font-semibold text-white">
@@ -105,7 +105,7 @@ export function PolicyPreview({
           </div>
           <div className="flex items-baseline justify-between gap-4">
             <dt className="flex items-center gap-2 text-slate-400">
-              <span className="size-2 rounded-full bg-indigo-400/70" />
+              <span className="size-2 rounded-full bg-status-community/80" />
               Community pool ({communityShare}%)
             </dt>
             <dd className="font-semibold text-white">

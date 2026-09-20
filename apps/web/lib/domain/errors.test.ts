@@ -5,6 +5,8 @@ import {
   contractErrorMessage,
   contractErrorName,
   isContractErrorCode,
+  transactionHashFromError,
+  userFacingError,
 } from "./errors";
 
 const ALL_CODES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
@@ -34,6 +36,34 @@ describe("ContractErrorCode", () => {
     for (const code of [0, 15, -1, 1.5]) {
       expect(isContractErrorCode(code)).toBe(false);
     }
+  });
+});
+
+describe("userFacingError", () => {
+  it("never exposes an unknown raw SDK message", () => {
+    const raw = new Error(
+      "tx_bad_auth: AAAA...XDR https://rpc.example.invalid/private",
+    );
+    expect(userFacingError(raw, "Please retry.")).toBe("Please retry.");
+  });
+
+  it("provides actionable wallet and timeout recovery", () => {
+    expect(userFacingError({ kind: "rejected" })).toMatch(/declined/i);
+    expect(userFacingError({ kind: "timeout" })).toMatch(/transaction link/i);
+  });
+
+  it("keeps numeric contract error mapping exact", () => {
+    expect(userFacingError({ name: "ContractError", code: 4 })).toBe(
+      contractErrorMessage(4),
+    );
+  });
+});
+
+describe("transactionHashFromError", () => {
+  it("finds a validated hash without accepting arbitrary text", () => {
+    const hash = "a1".repeat(32);
+    expect(transactionHashFromError({ cause: { hash } })).toBe(hash);
+    expect(transactionHashFromError({ hash: "not-a-hash" })).toBeUndefined();
   });
 });
 

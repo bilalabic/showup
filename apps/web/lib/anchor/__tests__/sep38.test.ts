@@ -13,6 +13,7 @@ import {
   EXPIRED_QUOTE_WARNING,
   getFirmQuote,
   getIndicativePrice,
+  getIndicativePriceForBuyAmount,
   isQuoteExpired,
   parseExpiresAt,
   stellarAssetId,
@@ -144,6 +145,66 @@ describe("getIndicativePrice", () => {
     await getIndicativePrice("999999.99", { config });
 
     expect(new URL(requestedUrl).searchParams.get("sell_amount")).toBe("999999.99");
+  });
+});
+
+describe("getIndicativePriceForBuyAmount", () => {
+  it("requests the exact USDC bond amount without authentication", async () => {
+    let requestedUrl = "";
+    const buyAmountResponse = {
+      ...SEP38_PRICE_RESPONSE,
+      sell_amount: "605.734567890123",
+      buy_amount: "12.3456789",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        requestedUrl = url;
+        expect(
+          (init.headers as Record<string, string>).Authorization,
+        ).toBeUndefined();
+        return new Response(JSON.stringify(buyAmountResponse), { status: 200 });
+      }),
+    );
+
+    const price = await getIndicativePriceForBuyAmount("12.3456789", {
+      config,
+    });
+
+    const params = new URL(requestedUrl).searchParams;
+    expect(params.get("buy_amount")).toBe("12.3456789");
+    expect(params.has("sell_amount")).toBe(false);
+    expect(params.get("sell_asset")).toBe("iso4217:TRY");
+    expect(params.get("buy_asset")).toBe(`stellar:USDC:${USDC_ISSUER}`);
+    expect(params.get("context")).toBe("sep6");
+    expect(params.get("sell_delivery_method")).toBe("bank_account");
+    expect(price.sellAmount).toBe("605.734567890123");
+    expect(price.buyAmount).toBe("12.3456789");
+  });
+
+  it("preserves decimal strings returned by the Anchor", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            ...SEP38_PRICE_RESPONSE,
+            sell_amount: "49.0000000000000001",
+            buy_amount: "1.0000000",
+            total_price: "49.0000000000000001",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    const price = await getIndicativePriceForBuyAmount("1.0000000", {
+      config,
+    });
+
+    expect(price.sellAmount).toBe("49.0000000000000001");
+    expect(price.buyAmount).toBe("1.0000000");
+    expect(price.totalPrice).toBe("49.0000000000000001");
   });
 });
 

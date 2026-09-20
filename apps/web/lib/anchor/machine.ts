@@ -52,6 +52,8 @@ export type DepositContext = {
   quote?: Quote;
   /** True once the quote's `expires_at` has passed. A WARNING, never a block. */
   quoteExpired: boolean;
+  /** A fresh public price fetched after the firm quote expired. */
+  expiredQuotePrice?: Price;
   ticket?: DepositTicket;
   /** The SEP-6 transaction id. Persisted across reloads. */
   depositId?: string;
@@ -84,6 +86,8 @@ export type DepositAction =
   | { type: "AUTHENTICATE" }
   | { type: "AUTHENTICATED" }
   | { type: "QUOTED"; quote: Quote; nowSeconds: number }
+  | { type: "QUOTE_EXPIRY_CHECKED"; nowSeconds: number }
+  | { type: "QUOTE_REPRICED"; quoteId: string; price: Price }
   | { type: "QUOTE_SKIPPED" }
   | { type: "DEPOSIT_STARTED"; ticket: DepositTicket }
   /** The only action that drives the second half of the flow. */
@@ -268,9 +272,35 @@ export function depositReducer(
           ...state.context,
           quote: action.quote,
           quoteExpired: isQuoteExpired(action.quote, action.nowSeconds),
+          expiredQuotePrice: undefined,
         },
       };
     }
+
+    case "QUOTE_EXPIRY_CHECKED": {
+      if (!state.context.quote) return state;
+      const quoteExpired = isQuoteExpired(
+        state.context.quote,
+        action.nowSeconds,
+      );
+      if (quoteExpired === state.context.quoteExpired) return state;
+      return {
+        ...state,
+        context: { ...state.context, quoteExpired },
+      };
+    }
+
+    case "QUOTE_REPRICED":
+      if (
+        !state.context.quoteExpired ||
+        state.context.quote?.id !== action.quoteId
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        context: { ...state.context, expiredQuotePrice: action.price },
+      };
 
     case "QUOTE_SKIPPED":
       // A quote is optional — without one the Anchor prices at the live rate.

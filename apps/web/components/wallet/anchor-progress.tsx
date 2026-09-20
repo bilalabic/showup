@@ -58,10 +58,10 @@ export function AnchorProgress({ name }: { name: DepositStateName }) {
     STAGES.length > 1 ? reached / (STAGES.length - 1) : 0;
 
   const railColour = halted
-    ? "from-rose-500 to-rose-400"
+    ? "bg-status-no-show"
     : waiting
-      ? "from-amber-400 to-amber-300"
-      : "from-cyan-400 to-cyan-200";
+      ? "bg-status-community"
+      : "bg-brand";
 
   return (
     <div className="mt-5">
@@ -70,7 +70,7 @@ export function AnchorProgress({ name }: { name: DepositStateName }) {
           <m.div
             animate={{ scaleX: progress }}
             className={cn(
-              "h-full w-full origin-left rounded-full bg-gradient-to-r",
+              "h-full w-full origin-left rounded-full",
               railColour,
             )}
             initial={reduceMotion ? false : { scaleX: 0 }}
@@ -92,13 +92,13 @@ export function AnchorProgress({ name }: { name: DepositStateName }) {
                 <span
                   className={cn(
                     "relative grid size-[1.125rem] place-items-center rounded-full border transition-colors duration-(--duration-component)",
-                    done && !halted && "border-cyan-300 bg-cyan-300",
+                    done && !halted && "border-brand bg-brand",
                     current && halted && "border-rose-400 bg-rose-400/20",
                     current && waiting && "border-amber-300 bg-amber-300/20",
                     current &&
                       !halted &&
                       !waiting &&
-                      "border-cyan-300 bg-slate-950",
+                      "border-brand bg-slate-950",
                     !done && !current && "border-white/15 bg-slate-950",
                   )}
                 >
@@ -108,7 +108,7 @@ export function AnchorProgress({ name }: { name: DepositStateName }) {
                       done && !halted && "bg-slate-950",
                       current && halted && "bg-rose-300",
                       current && waiting && "bg-amber-300",
-                      current && !halted && !waiting && "bg-cyan-300",
+                      current && !halted && !waiting && "bg-brand",
                       !done && !current && "bg-white/20",
                     )}
                   />
@@ -116,7 +116,7 @@ export function AnchorProgress({ name }: { name: DepositStateName }) {
                     <span
                       className={cn(
                         "absolute size-[1.125rem] animate-ping rounded-full",
-                        waiting ? "bg-amber-300/25" : "bg-cyan-300/25",
+                        waiting ? "bg-amber-300/25" : "bg-brand/25",
                       )}
                     />
                   ) : null}
@@ -124,8 +124,8 @@ export function AnchorProgress({ name }: { name: DepositStateName }) {
                 <span
                   className={cn(
                     "text-center text-[10px] font-bold uppercase tracking-[0.1em] transition-colors",
-                    done && "text-cyan-200/70",
-                    current && "text-cyan-200",
+                    done && "text-brand-soft/70",
+                    current && "text-brand-soft",
                     !done && !current && "text-slate-500",
                   )}
                 >

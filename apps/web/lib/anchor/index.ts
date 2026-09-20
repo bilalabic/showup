@@ -73,6 +73,7 @@ export {
   EXPIRED_QUOTE_WARNING,
   getFirmQuote,
   getIndicativePrice,
+  getIndicativePriceForBuyAmount,
   isQuoteExpired,
   parseExpiresAt,
   stellarAssetId,

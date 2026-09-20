@@ -19,7 +19,7 @@ function Toaster(props: ToasterProps) {
           toast:
             "!rounded-2xl !border !border-white/12 !bg-slate-900/90 !text-slate-100 !backdrop-blur-xl !shadow-2xl !shadow-black/50",
           description: "!text-slate-400",
-          actionButton: "!bg-cyan-300 !text-slate-950 !font-bold",
+          actionButton: "!bg-brand !text-primary-foreground !font-bold",
           cancelButton: "!bg-white/10 !text-slate-200",
           success: "!border-emerald-300/30",
           error: "!border-rose-400/30",

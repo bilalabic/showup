@@ -102,13 +102,51 @@ export async function getIndicativePrice(
     "SEP-38 price",
   );
 
+  return parsePrice(payload, buyAsset);
+}
+
+/**
+ * `GET {ANCHOR_QUOTE_SERVER}/price` for an exact USDC amount.
+ *
+ * This is the public counterpart to a firm buy-amount quote. It lets an event
+ * page estimate how much TRY would fund the bond without connecting a wallet or
+ * creating an authenticated Anchor session. The decimal string is forwarded
+ * unchanged so the caller's exact seven-decimal USDC amount is preserved.
+ */
+export async function getIndicativePriceForBuyAmount(
+  usdcAmount: string,
+  options: { config: AnchorConfig; signal?: AbortSignal },
+): Promise<Price> {
+  const { config } = options;
+  const buyAsset = stellarAssetId(config);
+
+  const url = buildUrl(config.quoteServer, "/price", {
+    sell_asset: FIAT_ASSET_ID,
+    buy_asset: buyAsset,
+    buy_amount: usdcAmount,
+    context: QUOTE_CONTEXT,
+    sell_delivery_method: DELIVERY_METHOD,
+  });
+
+  const payload = requireRecord(
+    await anchorRequest<unknown>(url, { signal: options.signal }),
+    "SEP-38 price",
+  );
+
+  return parsePrice(payload, buyAsset);
+}
+
+function parsePrice(
+  payload: Record<string, unknown>,
+  fallbackBuyAsset: AssetId,
+): Price {
   return {
     sellAmount: requireString(payload, "sell_amount", "SEP-38 price"),
     buyAmount: requireString(payload, "buy_amount", "SEP-38 price"),
     price: requireString(payload, "price", "SEP-38 price"),
     totalPrice: requireString(payload, "total_price", "SEP-38 price"),
-    sellAsset: FIAT_ASSET_ID,
-    buyAsset,
+    sellAsset: optionalString(payload.sell_asset) ?? FIAT_ASSET_ID,
+    buyAsset: optionalString(payload.buy_asset) ?? fallbackBuyAsset,
     fee: parseFee(payload.fee),
   };
 }

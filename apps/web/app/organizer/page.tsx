@@ -34,10 +34,10 @@ export default function OrganizerPage() {
     <main className="mx-auto w-full max-w-4xl px-5 py-14 sm:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">
             Organizer
           </p>
-          <h1 className="mt-3 text-4xl font-black tracking-[-0.04em]">
+          <h1 className="mt-3 text-4xl font-bold tracking-[-0.04em]">
             Your events
           </h1>
           <p className="mt-2 text-slate-400">
@@ -89,12 +89,12 @@ export default function OrganizerPage() {
                 }}
               >
                 <Link
-                  className="group block rounded-3xl border border-white/10 bg-white/[0.02] p-5 transition-[border-color,background-color,transform,box-shadow] duration-(--duration-component) ease-(--ease-out-soft) hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-white/[0.05] hover:shadow-[0_24px_50px_-32px_rgba(103,232,249,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 motion-reduce:hover:translate-y-0"
+                  className="group block rounded-3xl border border-white/10 bg-white/[0.02] p-5 transition-[border-color,background-color,transform,box-shadow] duration-(--duration-component) ease-(--ease-out-soft) hover:-translate-y-0.5 hover:border-brand/40 hover:bg-white/[0.05] hover:shadow-[0_24px_50px_-32px_rgba(77,230,198,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand motion-reduce:hover:translate-y-0"
                   href={`/organizer/events/${event.id}`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-lg font-black tracking-tight">
+                      <p className="text-lg font-bold tracking-tight">
                         {event.title}
                       </p>
                       <p className="mt-1 text-sm text-slate-400">
@@ -103,13 +103,13 @@ export default function OrganizerPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       {event.status === "cancelled" ? (
-                        <StatusBadge tone="critical">Cancelled</StatusBadge>
+                        <StatusBadge tone="neutral">Cancelled</StatusBadge>
                       ) : event.reservedCount >= event.capacity ? (
                         <StatusBadge tone="warning">Full</StatusBadge>
                       ) : (
                         <StatusBadge tone="positive">Active</StatusBadge>
                       )}
-                      <p className="text-right text-base font-black text-cyan-300">
+                      <p className="text-right text-base font-bold text-brand">
                         <Money stroops={event.bondAmount} />
                       </p>
                     </div>

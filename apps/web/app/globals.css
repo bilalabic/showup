@@ -9,16 +9,27 @@
 
 :root {
   /* Surfaces and text */
-  --background: #020617;
+  --background: #050a16;
   --foreground: #f8fafc;
   --card: #0b1222;
   --card-foreground: #f8fafc;
   --popover: #0f172a;
   --popover-foreground: #f8fafc;
 
-  /* The one vibrant accent. Everything else stays calm. */
-  --primary: #67e8f9;
-  --primary-foreground: #020617;
+  /* Identity palette: electric mint with one warm settlement counterpoint. */
+  --primary: #4de6c6;
+  --primary-soft: #7af1d7;
+  --primary-strong: #31cfae;
+  --primary-foreground: #04110f;
+  --community: #ffb454;
+  --community-foreground: #1c1002;
+
+  /* Semantic state colors. Product states, not decoration, own color. */
+  --status-locked: var(--primary);
+  --status-success: #6ee7b7;
+  --status-neutral: #94a3b8;
+  --status-no-show: #fb7185;
+  --status-community: var(--community);
 
   --secondary: #ffffff14;
   --secondary-foreground: #e2e8f0;
@@ -30,7 +41,7 @@
 
   --border: #ffffff1f;
   --input: #ffffff1f;
-  --ring: #67e8f9;
+  --ring: var(--primary);
 
   --radius: 0.875rem;
 
@@ -51,7 +62,17 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-brand: var(--primary);
+  --color-brand-soft: var(--primary-soft);
+  --color-brand-strong: var(--primary-strong);
   --color-primary-foreground: var(--primary-foreground);
+  --color-community: var(--community);
+  --color-community-foreground: var(--community-foreground);
+  --color-status-locked: var(--status-locked);
+  --color-status-success: var(--status-success);
+  --color-status-neutral: var(--status-neutral);
+  --color-status-no-show: var(--status-no-show);
+  --color-status-community: var(--status-community);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -69,7 +90,8 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-space-mono);
+  --font-headline: var(--font-display);
 }
 
 @layer base {
@@ -78,15 +100,39 @@
   }
 
   body {
-    background: var(--background);
+    background:
+      radial-gradient(circle at 50% -20%, rgb(77 230 198 / 0.07), transparent 34rem),
+      radial-gradient(circle at 85% 110%, rgb(99 102 241 / 0.06), transparent 38rem),
+      var(--background);
+    background-attachment: fixed;
     color: var(--foreground);
     font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display), var(--font-geist-sans), sans-serif;
   }
 
   button,
   a {
     -webkit-tap-highlight-color: transparent;
   }
+}
+
+/* Type scale
+   display-xl  5.25rem / 0.94 / 700 / -0.04em
+   display-lg  4.5rem  / 0.98 / 700 / -0.04em
+   heading-xl  3rem    / 1.08 / 700 / -0.035em
+   heading-lg  2.25rem / 1.12 / 700 / -0.03em
+   heading-md  1.5rem  / 1.2  / 600 / -0.02em
+   body-lg     1.125rem / 1.75 / 400 / normal
+   body-md     1rem     / 1.65 / 400 / normal
+   body-sm     0.875rem / 1.5  / 400 / normal */
+
+@utility font-headline {
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
 }
 
 /* ---------------------------------------------------------------------------
@@ -132,7 +178,7 @@
 }
 
 .hero-glow {
-  background: rgba(34, 211, 238, 0.22);
+  background: rgb(77 230 198 / 0.2);
 }
 
 .grain-overlay {

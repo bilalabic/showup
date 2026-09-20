@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { BondCard } from "@/components/landing/bond-card";
 import { Lifecycle } from "@/components/landing/lifecycle";
+import { LatestEventCta } from "@/components/landing/latest-event-cta";
 import { Button } from "@/components/ui/button";
 import { ShimmerButton } from "@/components/ui/magic/shimmer-button";
 import { Particles } from "@/components/ui/magic/particles";
@@ -25,14 +26,14 @@ export default function Home() {
           {/* The reveal is a CSS animation, not a JavaScript one: the headline
               has to be readable before — and without — the motion runtime. */}
           <div
-            className="reveal mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/5 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-cyan-200"
+            className="reveal mb-8 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand/5 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-brand-soft"
             style={{ animationDelay: "40ms" }}
           >
-            <span className="size-1.5 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.9)]" />
+            <span className="size-1.5 rounded-full bg-brand shadow-[0_0_10px_rgba(77,230,198,0.85)]" />
             Live on Stellar Testnet
           </div>
 
-          <h1 className="max-w-3xl text-5xl font-black leading-[0.94] tracking-[-0.055em] text-white sm:text-7xl lg:text-[5.25rem]">
+          <h1 className="max-w-3xl text-5xl font-bold leading-[0.94] tracking-[-0.045em] text-white sm:text-7xl lg:text-[5.25rem]">
             <span
               className="reveal block"
               style={{ animationDelay: "120ms" }}
@@ -46,7 +47,7 @@ export default function Home() {
               showing up.
             </span>
             <span
-              className="reveal mt-2 block bg-gradient-to-br from-cyan-200 via-cyan-300 to-cyan-500 bg-clip-text text-transparent"
+              className="reveal mt-2 block bg-gradient-to-br from-brand-soft via-brand to-community bg-clip-text text-transparent"
               style={{ animationDelay: "280ms" }}
             >
               Get your bond back.
@@ -85,8 +86,9 @@ export default function Home() {
                 <Link href="/organizer/events/new">Create an event</Link>
               </Button>
             </ShimmerButton>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/organizer">Your events</Link>
+            <LatestEventCta />
+            <Button asChild size="lg" variant="ghost">
+              <Link href="/organizer">Organizer dashboard</Link>
             </Button>
           </div>
         </div>

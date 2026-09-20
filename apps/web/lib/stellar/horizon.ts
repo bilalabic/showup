@@ -20,6 +20,7 @@ import {
 
 import { toStroops } from "../domain";
 import { TESTNET_NETWORK_PASSPHRASE } from "./rpc";
+import { calculateXlmReservePosition } from "./xlm-reserve";
 
 /** Default public Testnet Horizon endpoint. */
 export const DEFAULT_HORIZON_URL = "https://horizon-testnet.stellar.org";
@@ -31,6 +32,9 @@ export const USDC_ISSUER =
 
 /** Mock USDC asset code. */
 export const USDC_CODE = process.env.NEXT_PUBLIC_USDC_CODE?.trim() || "USDC";
+
+/** Fee used by the locally built one-operation change-trust transaction. */
+export const CHANGE_TRUST_FEE_STROOPS = BigInt(BASE_FEE);
 
 /** The settlement asset as a classic Stellar asset. */
 export function getUsdcAsset(): Asset {
@@ -67,6 +71,14 @@ export type AccountAssets = {
   exists: boolean;
   /** Native XLM balance in stroops. */
   xlm: bigint;
+  /** Current network base reserve in stroops. */
+  baseReserve: bigint;
+  /** Minimum balance locked by the account and its reserve entries. */
+  minimumBalance: bigint;
+  /** Native XLM committed to open selling offers. */
+  nativeSellingLiabilities: bigint;
+  /** XLM available after the minimum balance and native liabilities. */
+  spendableXlm: bigint;
   /** Mock USDC balance in stroops; `0n` when there is no trustline. */
   usdc: bigint;
   hasUsdcTrustline: boolean;
@@ -75,6 +87,10 @@ export type AccountAssets = {
 const EMPTY_ACCOUNT: AccountAssets = {
   exists: false,
   xlm: 0n,
+  baseReserve: 0n,
+  minimumBalance: 0n,
+  nativeSellingLiabilities: 0n,
+  spendableXlm: 0n,
   usdc: 0n,
   hasUsdcTrustline: false,
 };
@@ -113,12 +129,14 @@ export async function getAccountAssets(
   }
 
   let xlm = 0n;
+  let nativeSellingLiabilities = 0n;
   let usdc = 0n;
   let hasUsdcTrustline = false;
 
   for (const line of account.balances) {
     if (line.asset_type === "native") {
       xlm = toStroops(line.balance);
+      nativeSellingLiabilities = toStroops(line.selling_liabilities);
       continue;
     }
 
@@ -130,7 +148,36 @@ export async function getAccountAssets(
     }
   }
 
-  return { exists: true, xlm, usdc, hasUsdcTrustline };
+  const ledgers = await getHorizon()
+    .ledgers()
+    .order("desc")
+    .limit(1)
+    .call();
+  const latestLedger = ledgers.records[0];
+  if (!latestLedger) {
+    throw new Error("Horizon did not return a latest ledger.");
+  }
+
+  const baseReserve = BigInt(latestLedger.base_reserve_in_stroops);
+  const position = calculateXlmReservePosition({
+    balance: xlm,
+    baseReserve,
+    subentryCount: account.subentry_count,
+    numSponsoring: account.num_sponsoring,
+    numSponsored: account.num_sponsored,
+    sellingLiabilities: nativeSellingLiabilities,
+  });
+
+  return {
+    exists: true,
+    xlm,
+    baseReserve,
+    minimumBalance: position.minimumBalance,
+    nativeSellingLiabilities,
+    spendableXlm: position.spendable,
+    usdc,
+    hasUsdcTrustline,
+  };
 }
 
 /** Whether an account already holds the Mock USDC trustline. */

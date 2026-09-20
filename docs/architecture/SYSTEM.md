@@ -1,7 +1,9 @@
 # ShowUp — P0 System Architecture
 
-> This is the approved architecture, and it is now largely built: checkpoints
-> C1–C9 are implemented. The design below is what the code follows, so it stays
+> This is the approved architecture, and checkpoints C1–C12 are implemented in
+> code and local documentation. Live wallet acceptance, Anchor settlement
+> evidence and public submission artifacts remain external follow-up. The design
+> below is what the code follows, so it stays
 > authoritative — but read it as a specification the implementation conforms to,
 > not as a plan for unwritten work. Checkpoint status lives in
 > **Implementation Plan**.
@@ -29,12 +31,13 @@ plan departs from that document on a *technical* decision, the departure is
 called out explicitly in **Decisions Requiring Confirmation** rather than made
 silently.
 
-### Documents requested but not present
+### Documentation set
 
-`docs/HACKATHON_REQUIREMENTS.md` and `docs/DEVELOPMENT.md` do not exist. Phase 0
-created `docs/architecture.md`, `docs/contract.md`, `docs/demo-script.md`,
-`docs/stellar-skills.md` and `docs/phase-0-environment-audit.md` instead. The
-documentation plan below reconciles the two sets.
+The root README owns setup and deployment instructions; separate placeholder
+documents are deliberately avoided. `docs/HACKATHON_REQUIREMENTS.md` maps scope
+to evidence, `docs/SECURITY.md` contains the enforcement boundaries,
+`docs/contract.md` is the contract reference, and this file remains the single
+system-architecture authority.
 
 ---
 
@@ -1559,10 +1562,11 @@ later client call resets it.
 
 All from recorded fixtures. No unit test touches the live network.
 
-### End-to-end — documented, manually rehearsed, Playwright only if time allows
+### End-to-end — documented; live wallet rehearsal still pending
 
-Two deterministic Testnet flows, both recorded with transaction hashes as
-submission evidence.
+Two deterministic Testnet flows define the remaining manual acceptance work.
+Their transaction hashes must be recorded as submission evidence after a live
+Freighter and Anchor run.
 
 **Golden path**
 
@@ -1586,8 +1590,9 @@ second participant reserves on the compressed-window fixture
 ```
 
 The specification's guidance stands: do not block submission on browser test
-coverage. The two flows above are rehearsed by hand at least twice and their
-hashes captured.
+automation. The flows above have not yet completed live acceptance; do not mark
+them complete or invent hashes until the wallet and external Anchor worker have
+confirmed them.
 
 ---
 
@@ -1619,12 +1624,11 @@ makes it a safe place to stop if time runs out.
    anywhere holding hand-written code, and `packages/showup-bond-client` is
    therefore generated-only, as **Final Repository Structure** already states.
 
-The deploy script also needs extending for the constructor: the contract now takes
-`(token, community_pool)`, where `token` is the verified USDC SAC
-`CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` — already deployed on
-Testnet, so no `stellar contract asset deploy` step is needed. The script should
-probe for existence rather than assume, since a duplicate SAC deploy errors rather
-than no-oping.
+The deploy script passes the constructor's `(token, community_pool)` arguments,
+where `token` is the verified USDC SAC
+`CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA`. It probes the SAC
+before deploying because a duplicate asset-contract deploy errors rather than
+no-oping.
 | C5 | Wallet adapter + connect + network guard | 7–9 | `lib/wallet`, `components/wallet` | C4 | Freighter connects on Testnet; mainnet blocked | `pnpm dev` | fall back to `@stellar/freighter-api` directly behind the same port — see Fallbacks |
 | C6 | Contract facade + organizer create-event page | 9–11 | `lib/contract`, `lib/domain`, `/organizer/events/new` | C5 | event created from the browser, visible on `/events/[id]` | `pnpm dev` | create events via CLI and demo read-only |
 | C7 | Trustline + balances + reserve from the UI | 11–13 | `lib/stellar`, `/wallet`, `/events/[id]` | C6 | participant locks a real bond; hash recorded | `pnpm dev` | — |
@@ -1667,21 +1671,18 @@ every case.
 
 ## 22. Documentation Architecture
 
-The brief names a document set that only partly exists. Reconciliation:
+The final set stays lean so the same claim does not drift across empty shells:
 
 | Document | State | Contents |
 |---|---|---|
-| `README.md` | exists, Phase 0 | Rewritten at C12: problem, journey, architecture diagram, claim boundary, Stellar/Anchor roles, setup, test, deploy, **exact skill paths**, limitations, submission evidence |
-| `docs/DEVELOPMENT.md` | **new** | Fresh-clone setup, the WSL contract-build path, preflight, scripts, troubleshooting. Absorbs the environment half of the Phase 0 audit. |
-| `docs/HACKATHON_REQUIREMENTS.md` | **new** | Requirement → where it is satisfied → evidence. The submission checklist lives here. |
-| `docs/architecture/SYSTEM.md` | **new** | This plan's system view, kept current |
-| `docs/architecture/CONTRACT.md` | replaces `docs/contract.md` | State model, API, invariants, events, TTL policy |
-| `docs/architecture/ANCHOR.md` | **new** | SEP flows, state machine, recovery paths, mock boundaries |
-| `docs/SECURITY.md` | **new** | The threat model above, with the four enforcement layers kept distinct |
-| `docs/stellar-skills.md` | exists | Kept as the working record; README quotes it |
-| `docs/phase-0-environment-audit.md` | exists | Frozen historical record. Not updated further. |
-| `docs/demo-script.md` | exists, placeholder | Filled at C12 |
-| `docs/architecture.md` | exists | **Folded into `docs/architecture/SYSTEM.md` and deleted** to avoid two files claiming the same job |
+| `README.md` | current | Problem, journey, architecture, setup, test/deploy, exact Skill paths, limitations and evidence |
+| `docs/HACKATHON_REQUIREMENTS.md` | current | Requirement → implementation → honest evidence state |
+| `docs/architecture/SYSTEM.md` | current | Authoritative system design and decisions |
+| `docs/contract.md` | current | Contract state, API, invariants, TTL and deployment |
+| `docs/SECURITY.md` | current | Contract, wallet, application and UI enforcement boundaries |
+| `docs/stellar-skills.md` | current | Exact Skill use and corrected live findings |
+| `docs/phase-0-environment-audit.md` | frozen | Historical environment record; intentionally not rewritten |
+| `docs/demo-script.md` | current | Rehearsal, fallbacks and evidence capture |
 
 Skill paths are re-verified against upstream before submission, as
 `docs/stellar-skills.md` already requires:
@@ -1720,7 +1721,9 @@ npx stellar-anchor-tests --home-domain https://tr-mock-anchor.fly.dev \
   --seps 1 10 12 6 38 --asset-code USDC --sep-config anchor-tests.config.json
 ```
 
-Captured at C12 and referenced from `docs/architecture/ANCHOR.md`.
+This optional conformance-suite evidence has not been captured yet. If it is
+run for submission, record the exact command and result in the demo evidence
+table; do not infer Anchor worker health from it.
 
 ---
 

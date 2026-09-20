@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { use, useCallback, useMemo, useRef, useState } from "react";
 
-import { TxStatus, type TxState } from "@/components/tx/tx-status";
+import {
+  TxStatus,
+  txFailureState,
+  type TxState,
+} from "@/components/tx/tx-status";
+import { ErrorState } from "@/components/ui/states";
 import {
   checkIn,
   getEvent,
@@ -24,8 +29,11 @@ import {
   type ReservationPass,
   useScanner,
 } from "@/lib/qr";
-import { getLedgerNow } from "@/lib/stellar";
-import { isWalletError } from "@/lib/wallet/port";
+import {
+  getAccountAssets,
+  getLedgerNow,
+  type AccountAssets,
+} from "@/lib/stellar";
 import { useWallet } from "@/lib/wallet/provider";
 
 type EventSnapshot = { event: EventView; ledgerNow: number };
@@ -33,28 +41,16 @@ type Candidate = {
   pass: ReservationPass;
   reservation: ReservationView;
   ledgerNow: number;
+  assets: AccountAssets | null;
 };
 
 const MAX_U64 = (1n << 64n) - 1n;
 
-function failureMessage(error: unknown): string {
-  if (isWalletError(error)) {
-    if (error.kind === "rejected") {
-      return "You declined the signature. The reservation was not changed.";
-    }
-    if (error.kind === "wrong_network") {
-      return "Freighter is not on Stellar Testnet. Switch networks and try again.";
-    }
-    if (error.kind === "no_wallet") {
-      return "Freighter is not available. Install or unlock it, then try again.";
-    }
-    if (error.kind === "not_connected") {
-      return "Your wallet disconnected. Reconnect and try again.";
-    }
-  }
-  return error instanceof Error && error.message
-    ? error.message
-    : "Check-in could not be completed.";
+function formatMoment(unixSeconds: number): string {
+  return new Date(unixSeconds * 1000).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 export default function ScanPage({
@@ -104,25 +100,34 @@ export default function ScanPage({
       setCandidate(null);
       setCandidateError(null);
       setTx({ kind: "idle" });
+      let pass: ReservationPass;
       try {
-        const pass = decodePass(raw);
-        if (pass.eventId !== eventId) {
-          throw new Error(
-            `This pass is for event #${pass.eventId.toString()}, not event #${eventId.toString()}.`,
-          );
-        }
-        const [reservation, ledgerNow] = await Promise.all([
+        pass = decodePass(raw);
+      } catch {
+        setCandidateError("The pass could not be read. Ask the participant to refresh it and try again.");
+        setReading(false);
+        return;
+      }
+      if (pass.eventId !== eventId) {
+        setCandidateError(
+          `This pass is for event #${pass.eventId.toString()}, not event #${eventId.toString()}.`,
+        );
+        setReading(false);
+        return;
+      }
+      try {
+        const [reservation, ledgerNow, assets] = await Promise.all([
           getReservation(eventId, pass.participant),
           getLedgerNow(),
+          getAccountAssets(pass.participant),
         ]);
         if (!reservation) {
-          throw new Error("No reservation exists for this pass on the contract.");
+          setCandidateError("No reservation exists for this pass on the contract.");
+          return;
         }
-        setCandidate({ pass, reservation, ledgerNow });
-      } catch (error) {
-        setCandidateError(
-          error instanceof Error ? error.message : "The pass could not be read.",
-        );
+        setCandidate({ assets, pass, reservation, ledgerNow });
+      } catch {
+        setCandidateError("The reservation could not be verified on-chain. Refresh and try again.");
       } finally {
         setReading(false);
       }
@@ -143,13 +148,9 @@ export default function ScanPage({
         issuedAt: state.data.ledgerNow,
       });
       await inspectPayload(raw);
-    } catch (error) {
+    } catch {
       setCandidate(null);
-      setCandidateError(
-        error instanceof Error
-          ? error.message
-          : "Enter a valid Stellar participant address.",
-      );
+      setCandidateError("Enter a valid Stellar participant address.");
     }
   }
 
@@ -160,6 +161,8 @@ export default function ScanPage({
       !canTransact ||
       state.status !== "ready" ||
       candidate.pass.eventId !== state.data.event.id ||
+      !candidate.assets?.exists ||
+      !candidate.assets.hasUsdcTrustline ||
       txBusyRef.current
     ) {
       return;
@@ -198,7 +201,12 @@ export default function ScanPage({
           current ? { ...current, reservation } : current,
         );
       }
-      setTx({ kind: "failed", message: failureMessage(error) });
+      setTx(
+        txFailureState(
+          error,
+          "Check-in could not be completed. Refresh and try again.",
+        ),
+      );
     } finally {
       txBusyRef.current = false;
     }
@@ -207,8 +215,8 @@ export default function ScanPage({
   if (eventId === null) {
     return (
       <main className="mx-auto w-full max-w-4xl px-5 py-20 sm:px-8">
-        <h1 className="text-3xl font-black">Invalid event</h1>
-        <Link className="mt-6 inline-block text-cyan-300 underline" href="/organizer">
+        <h1 className="text-3xl font-bold">Invalid event</h1>
+        <Link className="mt-6 inline-block text-brand underline" href="/organizer">
           Back to organizer events
         </Link>
       </main>
@@ -227,17 +235,12 @@ export default function ScanPage({
   if (state.status === "error") {
     return (
       <main className="mx-auto w-full max-w-4xl px-5 py-20 sm:px-8">
-        <h1 className="text-3xl font-black">Could not load the event</h1>
-        <p className="mt-3 text-slate-400">
-          {state.error instanceof Error ? state.error.message : "Try again."}
-        </p>
-        <button
-          className="mt-6 rounded-full bg-cyan-300 px-5 py-2.5 font-bold text-slate-950"
-          onClick={state.reload}
-          type="button"
-        >
-          Try again
-        </button>
+        <ErrorState
+          error={state.error}
+          fallback="Could not read this event from the contract."
+          onRetry={state.reload}
+          title="Could not load the event"
+        />
       </main>
     );
   }
@@ -251,19 +254,22 @@ export default function ScanPage({
   const passStale = candidate
     ? isPassStale(candidate.pass, candidate.ledgerNow)
     : false;
+  const canReceiveRefund = candidate
+    ? Boolean(candidate.assets?.exists && candidate.assets.hasUsdcTrustline)
+    : false;
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-12 sm:px-8">
       <Link
-        className="text-sm font-semibold text-slate-400 transition hover:text-cyan-300"
+        className="text-sm font-semibold text-slate-400 transition hover:text-brand"
         href={`/organizer/events/${event.id.toString()}`}
       >
         ← {event.title}
       </Link>
       <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-mono text-xs text-cyan-300">EVENT #{event.id.toString()}</p>
-          <h1 className="mt-2 text-4xl font-black tracking-[-0.04em]">Check in a guest</h1>
+          <p className="font-mono text-xs text-brand">EVENT #{event.id.toString()}</p>
+          <h1 className="mt-2 text-4xl font-bold tracking-[-0.04em]">Check in a guest</h1>
           <p className="mt-2 text-slate-400">
             Scan a ShowUp pass, verify the on-chain reservation, then sign once.
           </p>
@@ -276,7 +282,7 @@ export default function ScanPage({
             Connect the event verifier wallet before using the camera.
           </p>
           <button
-            className="mt-4 rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-bold text-slate-950 disabled:opacity-50"
+            className="mt-4 rounded-full bg-brand px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
             disabled={status === "connecting"}
             onClick={() => void connect()}
             type="button"
@@ -316,7 +322,7 @@ export default function ScanPage({
                 </button>
               ) : (
                 <button
-                  className="rounded-full bg-cyan-300 px-5 py-2.5 text-sm font-bold text-slate-950"
+                  className="rounded-full bg-brand px-5 py-2.5 text-sm font-bold text-primary-foreground"
                   onClick={() => {
                     if (videoRef.current) void scanner.start(videoRef.current);
                   }}
@@ -326,7 +332,7 @@ export default function ScanPage({
                 </button>
               )}
               {scanner.state.status === "scanning" ? (
-                <span className="self-center text-sm text-cyan-200">Looking for a QR code…</span>
+                <span className="self-center text-sm text-brand-soft">Looking for a QR code…</span>
               ) : null}
             </div>
             {scanner.state.status === "error" ? (
@@ -343,7 +349,7 @@ export default function ScanPage({
               <div className="mt-3 flex gap-2">
                 <input
                   aria-label="Participant Stellar address"
-                  className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950 px-3 py-2 font-mono text-xs outline-none focus:border-cyan-300/60"
+                  className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950 px-3 py-2 font-mono text-xs outline-none focus:border-brand/60"
                   onChange={(event) => setManualParticipant(event.target.value)}
                   placeholder="G…"
                   value={manualParticipant}
@@ -361,7 +367,7 @@ export default function ScanPage({
           </section>
 
           <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
-            <h2 className="text-xl font-black">Contract verification</h2>
+            <h2 className="text-xl font-bold">Contract verification</h2>
             {reading ? (
               <p className="mt-6 text-sm text-slate-300">Reading the reservation from Testnet…</p>
             ) : candidateError ? (
@@ -393,13 +399,31 @@ export default function ScanPage({
                   <p className="rounded-2xl border border-emerald-300/25 bg-emerald-300/5 px-4 py-3 text-sm text-emerald-100">
                     Already checked in. No additional signature is needed.
                   </p>
+                ) : !canReceiveRefund ? (
+                  <p className="rounded-2xl border border-amber-300/25 bg-amber-300/5 px-4 py-3 text-sm leading-5 text-amber-100">
+                    This participant cannot currently receive the USDC refund. They must re-enable the USDC trustline, then present the pass or be looked up again. No check-in transaction has been started.
+                  </p>
+                ) : !checkInOpen &&
+                  candidate.ledgerNow < state.data.event.checkinStart ? (
+                  <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-6 text-slate-300">
+                    Check-in has not opened yet. It opens at{" "}
+                    {formatMoment(state.data.event.checkinStart)}.
+                  </p>
+                ) : !checkInOpen &&
+                  candidate.ledgerNow > state.data.event.checkinDeadline ? (
+                  <p className="rounded-2xl border border-amber-300/25 bg-amber-300/5 px-4 py-3 text-sm leading-6 text-amber-100">
+                    Check-in closed at{" "}
+                    {formatMoment(state.data.event.checkinDeadline)}. The bond can
+                    now only follow the contract&apos;s no-show settlement path.
+                  </p>
                 ) : !checkInOpen ? (
                   <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-                    Check-in is not available for this reservation at the current ledger time.
+                    This reservation is not eligible for check-in in its current
+                    on-chain state.
                   </p>
                 ) : (
                   <button
-                    className="w-full rounded-full bg-cyan-300 px-5 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
+                    className="w-full rounded-full bg-brand px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
                     disabled={tx.kind === "running"}
                     onClick={() => void confirmCheckIn()}
                     type="button"

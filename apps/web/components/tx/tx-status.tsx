@@ -4,10 +4,15 @@ import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useEffect } from "react";
 
 import { celebrate } from "@/components/tx/celebrate";
+import { publishTechnicalEvidence } from "@/components/debug/evidence-events";
 import { NumberTicker } from "@/components/ui/magic/number-ticker";
 import { cn } from "@/components/ui/utils";
 import type { TxPhase } from "@/lib/contract";
-import { fromStroops } from "@/lib/domain";
+import {
+  fromStroops,
+  transactionHashFromError,
+  userFacingError,
+} from "@/lib/domain";
 
 export type TxState =
   | { kind: "idle" }
@@ -23,7 +28,15 @@ export type TxState =
       amountStroops?: bigint;
       amountCaption?: string;
     }
-  | { kind: "failed"; message: string };
+  | { kind: "failed"; message: string; hash?: string };
+
+export function txFailureState(error: unknown, fallback?: string): TxState {
+  return {
+    kind: "failed",
+    message: userFacingError(error, fallback),
+    hash: transactionHashFromError(error),
+  };
+}
 
 // Signing is not success and submitting is not success. Each phase says only
 // what has actually happened, so the UI never claims a bond is locked before a
@@ -98,7 +111,7 @@ function PhaseRail({ phase }: { phase: TxPhase }) {
       <div className="absolute inset-x-[1.125rem] top-[0.5625rem] h-0.5 rounded-full bg-white/10">
         <m.div
           animate={{ scaleX: progress }}
-          className="h-full w-full origin-left rounded-full bg-gradient-to-r from-cyan-400 to-cyan-200"
+          className="h-full w-full origin-left rounded-full bg-brand"
           initial={reduceMotion ? false : { scaleX: 0 }}
           transition={reduceMotion ? { duration: 0 } : SPRING}
         />
@@ -115,8 +128,8 @@ function PhaseRail({ phase }: { phase: TxPhase }) {
                 animate={{ scale: active && !reduceMotion ? 1.12 : 1 }}
                 className={cn(
                   "relative grid size-[1.125rem] place-items-center rounded-full border transition-colors duration-(--duration-component)",
-                  done && "border-cyan-300 bg-cyan-300 text-slate-950",
-                  active && "border-cyan-300 bg-slate-950 text-cyan-200",
+                  done && "border-brand bg-brand text-primary-foreground",
+                  active && "border-brand bg-slate-950 text-brand-soft",
                   !done && !active && "border-white/15 bg-slate-950",
                 )}
                 transition={reduceMotion ? { duration: 0 } : SPRING}
@@ -125,9 +138,9 @@ function PhaseRail({ phase }: { phase: TxPhase }) {
                   <CheckMark />
                 ) : active ? (
                   <>
-                    <span className="size-1.5 rounded-full bg-cyan-300" />
+                    <span className="size-1.5 rounded-full bg-brand" />
                     {reduceMotion ? null : (
-                      <span className="absolute size-[1.125rem] animate-ping rounded-full bg-cyan-300/25" />
+                      <span className="absolute size-[1.125rem] animate-ping rounded-full bg-brand/25" />
                     )}
                   </>
                 ) : (
@@ -137,8 +150,8 @@ function PhaseRail({ phase }: { phase: TxPhase }) {
               <span
                 className={cn(
                   "text-center text-[10px] font-bold uppercase tracking-[0.12em] transition-colors duration-(--duration-component)",
-                  done && "text-cyan-200/70",
-                  active && "text-cyan-200",
+                  done && "text-brand-soft/70",
+                  active && "text-brand-soft",
                   !done && !active && "text-slate-500",
                 )}
               >
@@ -167,6 +180,7 @@ function SuccessPanel({
   // result, and never replays on an unrelated re-render.
   useEffect(() => {
     void celebrate();
+    publishTechnicalEvidence({ transactionHash: hash });
   }, [hash]);
 
   return (
@@ -184,9 +198,11 @@ function SuccessPanel({
       </div>
 
       {amountStroops === undefined ? null : (
-        <p className="mt-4 text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl">
+        <p className="mt-4 text-4xl font-bold tracking-[-0.04em] text-white sm:text-5xl">
           <NumberTicker format={fromStroops} suffix="USDC" value={amountStroops} />
-          <span className="ml-2 text-xl font-bold text-emerald-300">USDC</span>
+          <span aria-hidden="true" className="ml-2 text-xl font-bold text-emerald-300">
+            USDC
+          </span>
         </p>
       )}
 
@@ -228,7 +244,7 @@ export function TxStatus({ state }: { state: TxState }) {
         <m.div key="running" {...entrance}>
           <div
             aria-live="polite"
-            className="rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.05] px-5 py-5"
+            className="rounded-3xl border border-brand/20 bg-brand/[0.05] px-5 py-5"
             role="status"
           >
             <PhaseRail phase={state.phase} />
@@ -242,10 +258,10 @@ export function TxStatus({ state }: { state: TxState }) {
                   key={state.phase}
                   transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <p className="text-sm font-semibold text-cyan-100">
+                  <p className="text-sm font-semibold text-brand-soft">
                     {PHASE_COPY[state.phase]}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-cyan-100/60">
+                  <p className="mt-1 text-xs leading-5 text-brand-soft/60">
                     {PHASE_CAVEAT[state.phase]}
                   </p>
                 </m.div>
@@ -288,6 +304,16 @@ export function TxStatus({ state }: { state: TxState }) {
               </span>
             </div>
             <p className="mt-3 text-sm leading-6 text-rose-50">{state.message}</p>
+            {state.hash ? (
+              <a
+                className="mt-3 inline-block break-all font-mono text-xs text-rose-200 underline underline-offset-4"
+                href={explorerTxUrl(state.hash)}
+                rel="noreferrer noopener"
+                target="_blank"
+              >
+                {state.hash}
+              </a>
+            ) : null}
           </div>
         </m.div>
       )}

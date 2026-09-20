@@ -4,7 +4,11 @@ import Link from "next/link";
 import { m, useReducedMotion } from "motion/react";
 import { use, useMemo, useState } from "react";
 
-import { TxStatus, type TxState } from "@/components/tx/tx-status";
+import {
+  TxStatus,
+  txFailureState,
+  type TxState,
+} from "@/components/tx/tx-status";
 import { Button } from "@/components/ui/button";
 import { CapacityMeter } from "@/components/ui/capacity-meter";
 import { Countdown } from "@/components/ui/countdown";
@@ -14,6 +18,12 @@ import { ErrorState } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { EnableUsdcAction } from "@/components/wallet/enable-usdc-action";
+import { XlmFundingNotice } from "@/components/wallet/xlm-funding-notice";
+import {
+  discover,
+  getIndicativePriceForBuyAmount,
+  type Price,
+} from "@/lib/anchor";
 import {
   getEvent,
   getReservation,
@@ -33,7 +43,6 @@ import {
   getLedgerNow,
   type AccountAssets,
 } from "@/lib/stellar";
-import { isWalletError } from "@/lib/wallet/port";
 import { useWallet } from "@/lib/wallet/provider";
 
 type EventSnapshot = {
@@ -65,24 +74,49 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function failureMessage(error: unknown): string {
-  if (isWalletError(error)) {
-    switch (error.kind) {
-      case "rejected":
-        return "You declined the signature. No bond was locked.";
-      case "wrong_network":
-        return "Freighter is not on Stellar Testnet. Switch networks and try again.";
-      case "no_wallet":
-        return "Freighter is not available. Install or unlock it, then try again.";
-      case "not_connected":
-        return "Your wallet disconnected. Reconnect and try again.";
-      default:
-        return "The wallet could not complete the signature. Please try again.";
-    }
+function TryBondEstimate({ bondAmount }: { bondAmount: bigint }) {
+  const usdcAmount = fromStroops(bondAmount);
+  const estimate = useAsyncData<Price | null>(
+    async () => {
+      try {
+        const config = await discover();
+        return await getIndicativePriceForBuyAmount(usdcAmount, { config });
+      } catch {
+        // Pricing is optional context. An unavailable Anchor must never delay
+        // or disable the independent on-chain reservation flow.
+        return null;
+      }
+    },
+    [usdcAmount],
+  );
+
+  if (estimate.status === "loading") {
+    return (
+      <p className="mt-2 text-sm text-slate-500" aria-live="polite">
+        Checking the current TRY estimate…
+      </p>
+    );
   }
 
-  if (error instanceof Error && error.message) return error.message;
-  return "The reservation could not be completed. Please try again.";
+  if (estimate.status !== "ready" || estimate.data === null) {
+    return (
+      <p className="mt-2 text-sm text-slate-500">
+        TRY estimate temporarily unavailable. Reserving with USDC is unaffected.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-brand/15 bg-brand/[0.04] px-3 py-2">
+      <p className="text-sm font-semibold text-brand-soft">
+        About <span className="num">{estimate.data.sellAmount}</span> TRY
+      </p>
+      <p className="mt-1 text-xs leading-5 text-slate-400">
+        Public indicative Anchor estimate for exactly {estimate.data.buyAmount}{" "}
+        USDC. This is not a firm quote; the final rate may change.
+      </p>
+    </div>
+  );
 }
 
 /**
@@ -127,11 +161,11 @@ function SplitPreview({ event }: { event: EventView }) {
           never reflows. */}
       <div
         aria-hidden="true"
-        className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-indigo-400/70"
+        className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-status-community/75"
       >
         <m.span
           animate={{ scaleX: 1 }}
-          className="block h-full origin-left bg-amber-300/80"
+          className="block h-full origin-left bg-brand/80"
           initial={reduceMotion ? false : { scaleX: 0 }}
           style={{ width: `${organizerShare}%` }}
           transition={
@@ -144,7 +178,7 @@ function SplitPreview({ event }: { event: EventView }) {
       <dl className="mt-4 space-y-2 text-sm">
         <div className="flex items-baseline justify-between gap-4">
           <dt className="flex items-center gap-2 text-slate-400">
-            <span className="size-2 rounded-full bg-amber-300/80" />
+            <span className="size-2 rounded-full bg-brand/80" />
             Organizer ({organizerShare}%)
           </dt>
           <dd className="font-semibold text-white">
@@ -153,7 +187,7 @@ function SplitPreview({ event }: { event: EventView }) {
         </div>
         <div className="flex items-baseline justify-between gap-4">
           <dt className="flex items-center gap-2 text-slate-400">
-            <span className="size-2 rounded-full bg-indigo-400/70" />
+            <span className="size-2 rounded-full bg-status-community/80" />
             Community pool ({event.communityBps / 100}%)
           </dt>
           <dd className="font-semibold text-white">
@@ -206,7 +240,7 @@ export default function EventPage({
   if (eventId === null || (state.status === "error" && isNotFound(state.error))) {
     return (
       <main className="mx-auto w-full max-w-3xl px-5 py-20 sm:px-8">
-        <h1 className="text-3xl font-black tracking-tight">No such event</h1>
+        <h1 className="text-3xl font-bold tracking-tight">No such event</h1>
         <p className="mt-3 text-slate-400">
           Event {id} does not exist on this contract.
         </p>
@@ -275,7 +309,12 @@ export default function EventPage({
       });
       retry();
     } catch (error) {
-      setTx({ kind: "failed", message: failureMessage(error) });
+      setTx(
+        txFailureState(
+          error,
+          "The reservation could not be completed. Refresh and try again.",
+        ),
+      );
       retry();
     }
   }
@@ -287,7 +326,7 @@ export default function EventPage({
           Event #{event.id.toString()}
         </span>
         {cancelled ? (
-          <StatusBadge tone="critical">Cancelled by organizer</StatusBadge>
+          <StatusBadge tone="neutral">Cancelled by organizer</StatusBadge>
         ) : seatsLeft > 0 ? (
           <StatusBadge tone="positive">{`${seatsLeft} of ${event.capacity} left`}</StatusBadge>
         ) : (
@@ -295,7 +334,7 @@ export default function EventPage({
         )}
       </div>
 
-      <h1 className="mt-6 text-4xl font-black leading-tight tracking-[-0.045em] sm:text-5xl">
+      <h1 className="mt-6 text-4xl font-bold leading-tight tracking-[-0.045em] sm:text-5xl">
         {event.title}
       </h1>
       <p className="mt-3 text-lg text-slate-400">{event.venue}</p>
@@ -305,13 +344,14 @@ export default function EventPage({
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
             Refundable bond
           </p>
-          <p className="mt-2 text-4xl font-black tracking-[-0.04em] text-white">
+          <p className="mt-2 text-4xl font-bold tracking-[-0.04em] text-white">
             <span className="num">{fromStroops(event.bondAmount)}</span>
-            <span className="ml-2 text-lg font-bold text-cyan-300">USDC</span>
+            <span className="ml-2 text-lg font-bold text-brand">USDC</span>
           </p>
           <p className="mt-2 text-sm text-slate-400">
             Returned in full when you check in.
           </p>
+          <TryBondEstimate bondAmount={event.bondAmount} />
         </div>
         <div className="flex flex-col justify-between gap-5">
           <CapacityMeter
@@ -323,7 +363,7 @@ export default function EventPage({
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                 {deadline.label}
               </p>
-              <p className="mt-1 text-2xl font-black tracking-tight text-cyan-200">
+              <p className="mt-1 text-2xl font-bold tracking-tight text-brand-soft">
                 <Countdown
                   deadlineSeconds={deadline.at}
                   ledgerNowSeconds={ledgerNow}
@@ -387,17 +427,26 @@ export default function EventPage({
             </Button>
           </div>
         ) : reservationOpen && assets !== null && !assets.exists ? (
-          <div className="rounded-3xl border border-amber-300/25 bg-amber-300/[0.06] px-5 py-5 text-sm text-amber-100">
-            <p>
-              This account does not exist on Testnet yet. Fund it with XLM
-              before reserving.
-            </p>
-            <Button asChild className="mt-4" size="sm" variant="warning">
-              <Link href="/wallet">Prepare the wallet</Link>
-            </Button>
-          </div>
+          address ? (
+            <XlmFundingNotice
+              address={address}
+              title="Fund this Testnet account"
+            >
+              This account does not exist on Testnet yet. Friendbot can create
+              and fund it before you reserve a spot.
+            </XlmFundingNotice>
+          ) : null
         ) : reservationOpen && assets !== null && !assets.hasUsdcTrustline ? (
-          <EnableUsdcAction onSuccess={retry} />
+          <EnableUsdcAction assets={assets} onSuccess={retry} />
+        ) : reservationOpen &&
+          assets !== null &&
+          assets.spendableXlm === 0n &&
+          address ? (
+          <XlmFundingNotice address={address}>
+            This account has no XLM available above its current reserve and
+            native liabilities, so it cannot pay for the reservation
+            transaction. The bond remains untouched.
+          </XlmFundingNotice>
         ) : reservationOpen &&
           assets !== null &&
           assets.usdc < event.bondAmount ? (
@@ -414,11 +463,11 @@ export default function EventPage({
         ) : reservationOpen && confirming ? (
           <m.div
             animate={{ opacity: 1, y: 0 }}
-            className="glass rounded-3xl border-cyan-300/25 p-6"
+            className="glass rounded-3xl border-brand/25 p-6"
             initial={{ opacity: 0, y: 12 }}
             transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
           >
-            <h2 className="text-lg font-black text-cyan-100">
+            <h2 className="text-lg font-bold text-brand-soft">
               Confirm the bond policy
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-300">
@@ -474,7 +523,7 @@ export default function EventPage({
 
       <details className="mt-12 rounded-2xl border border-white/10 bg-slate-950/60 px-5 py-4">
         <summary className="cursor-pointer text-sm font-semibold text-slate-300">
-          Technical details
+          Contract policy data
         </summary>
         <dl className="mt-4 space-y-2 font-mono text-xs text-slate-400">
           <div className="flex flex-wrap justify-between gap-2">

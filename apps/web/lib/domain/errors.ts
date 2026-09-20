@@ -95,3 +95,80 @@ export function contractErrorMessage(code: number): string {
   }
   return `The contract rejected this call with error code ${code}.`;
 }
+
+type ErrorLike = {
+  name?: unknown;
+  kind?: unknown;
+  code?: unknown;
+  userMessage?: unknown;
+  hash?: unknown;
+  transactionHash?: unknown;
+  cause?: unknown;
+  sendTransactionResponse?: { hash?: unknown };
+};
+
+/** User-safe recovery copy for failures crossing an SDK or network boundary. */
+export function userFacingError(
+  error: unknown,
+  fallback = "The request could not be completed. Please try again.",
+): string {
+  if (!error || typeof error !== "object") return fallback;
+  const value = error as ErrorLike;
+
+  if (value.name === "ContractError" && typeof value.code === "number") {
+    return contractErrorMessage(value.code);
+  }
+  if (value.name === "AnchorError" && typeof value.userMessage === "string") {
+    return value.userMessage;
+  }
+
+  switch (value.kind) {
+    case "rejected":
+    case "user_rejected":
+      return "You declined the signature. Nothing was changed on-chain.";
+    case "wrong_network":
+      return "Freighter is not on Stellar Testnet. Switch networks and try again.";
+    case "no_wallet":
+      return "Freighter is not available. Install or unlock it, then try again.";
+    case "not_connected":
+      return "Your wallet disconnected. Reconnect and try again.";
+    case "restore_required":
+      return "This on-chain record needs restoration before it can be used. Refresh and try again.";
+    case "timeout":
+      return "Stellar is taking longer than expected. Check the transaction link before retrying.";
+    case "simulation_error":
+      return "The contract rejected the request before signature. Refresh the latest state and try again.";
+    case "submission_error":
+    case "ledger_failure":
+      return "Stellar could not confirm this transaction. Check its status before retrying.";
+    default:
+      return fallback;
+  }
+}
+
+const TRANSACTION_HASH = /^[0-9a-f]{64}$/i;
+
+/** Recover only a validated public transaction hash from a structured error. */
+export function transactionHashFromError(error: unknown): string | undefined {
+  let current: unknown = error;
+  const seen = new Set<unknown>();
+
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (!current || typeof current !== "object" || seen.has(current)) break;
+    seen.add(current);
+    const value = current as ErrorLike;
+    const candidates = [
+      value.hash,
+      value.transactionHash,
+      value.sendTransactionResponse?.hash,
+    ];
+    const hash = candidates.find(
+      (candidate): candidate is string =>
+        typeof candidate === "string" && TRANSACTION_HASH.test(candidate),
+    );
+    if (hash) return hash.toLowerCase();
+    current = value.cause;
+  }
+
+  return undefined;
+}

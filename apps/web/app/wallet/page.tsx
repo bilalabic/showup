@@ -7,23 +7,19 @@ import { ConnectPrompt, ErrorState } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { AnchorDeposit } from "@/components/wallet/anchor-deposit";
 import { EnableUsdcAction } from "@/components/wallet/enable-usdc-action";
+import { XlmFundingNotice } from "@/components/wallet/xlm-funding-notice";
 import { fromStroops } from "@/lib/domain";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
-import { getAccountAssets } from "@/lib/stellar";
+import { getAccountAssets, type AccountAssets } from "@/lib/stellar";
 import { useWallet } from "@/lib/wallet/provider";
 
-type Assets = {
-  exists: boolean;
-  xlm: bigint;
-  usdc: bigint;
-  hasUsdcTrustline: boolean;
-};
-
-const FRIENDBOT = "https://friendbot.stellar.org";
-
-const NO_ACCOUNT: Assets = {
+const NO_ACCOUNT: AccountAssets = {
   exists: false,
   xlm: 0n,
+  baseReserve: 0n,
+  minimumBalance: 0n,
+  nativeSellingLiabilities: 0n,
+  spendableXlm: 0n,
   usdc: 0n,
   hasUsdcTrustline: false,
 };
@@ -52,7 +48,7 @@ function Balance({
         {badge}
       </div>
       <p
-        className={`mt-3 text-3xl font-black tracking-[-0.03em] ${
+        className={`mt-3 text-3xl font-bold tracking-[-0.03em] ${
           muted ? "text-slate-500" : "text-white"
         }`}
       >
@@ -61,7 +57,9 @@ function Balance({
         ) : (
           <NumberTicker format={fromStroops} suffix={unit} value={value} />
         )}
-        <span className="ml-2 text-sm font-bold text-slate-400">{unit}</span>
+        <span aria-hidden="true" className="ml-2 text-sm font-bold text-slate-400">
+          {unit}
+        </span>
       </p>
       {note ? <p className="mt-2 text-xs leading-5 text-slate-500">{note}</p> : null}
     </div>
@@ -71,7 +69,7 @@ function Balance({
 export default function WalletPage() {
   const { address } = useWallet();
 
-  const state = useAsyncData<Assets>(
+  const state = useAsyncData<AccountAssets>(
     async () => (await getAccountAssets(address!)) ?? NO_ACCOUNT,
     [address],
     { enabled: Boolean(address) },
@@ -81,10 +79,10 @@ export default function WalletPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-14 sm:px-8">
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">
         Participant
       </p>
-      <h1 className="mt-3 text-4xl font-black tracking-[-0.04em]">
+      <h1 className="mt-3 text-4xl font-bold tracking-[-0.04em]">
         Your wallet
       </h1>
       <p className="mt-3 max-w-xl leading-7 text-slate-400">
@@ -124,11 +122,11 @@ export default function WalletPage() {
           <div className="mt-5 flex flex-wrap gap-3">
             <Button asChild variant="warning">
               <a
-                href={`${FRIENDBOT}?addr=${address}`}
+                href={`https://friendbot.stellar.org?addr=${encodeURIComponent(address)}`}
                 rel="noreferrer noopener"
                 target="_blank"
               >
-                Fund with friendbot
+                Fund with Friendbot
               </a>
             </Button>
             <Button onClick={retry} type="button" variant="outline">
@@ -140,10 +138,22 @@ export default function WalletPage() {
         <>
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             <Balance
-              label="Network fees"
-              note="Used for transaction fees and account reserves."
+              label="Total native balance"
+              note="The full XLM balance reported by Horizon."
               unit="XLM"
               value={state.data.xlm}
+            />
+            <Balance
+              label="Spendable network balance"
+              note="Available after the current minimum reserve and native selling liabilities."
+              unit="XLM"
+              value={state.data.spendableXlm}
+            />
+            <Balance
+              label="Minimum account reserve"
+              note={`Locked by account entries at the current ${fromStroops(state.data.baseReserve)} XLM base reserve.`}
+              unit="XLM"
+              value={state.data.minimumBalance}
             />
             <Balance
               badge={
@@ -165,9 +175,19 @@ export default function WalletPage() {
             />
           </div>
 
+          {state.data.spendableXlm === 0n ? (
+            <div className="mt-6">
+              <XlmFundingNotice address={address}>
+                This account has no XLM available above its current reserve and
+                native liabilities. It cannot pay for a trustline or contract
+                transaction until more Testnet XLM arrives.
+              </XlmFundingNotice>
+            </div>
+          ) : null}
+
           {!state.data.hasUsdcTrustline ? (
             <div className="mt-6">
-              <EnableUsdcAction onSuccess={state.reload} />
+              <EnableUsdcAction assets={state.data} onSuccess={state.reload} />
             </div>
           ) : null}
 

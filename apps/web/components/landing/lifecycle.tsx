@@ -1,6 +1,7 @@
 "use client";
 
 import { ScrollReveal } from "@/components/ui/magic/scroll-reveal";
+import { Logo } from "@/components/brand/logo";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 
 type Step = {
@@ -54,7 +55,7 @@ const STEPS: readonly Step[] = [
       "After the check-in deadline anyone can settle an unclaimed bond. It splits by the basis points published before you reserved.",
     state: "No-show settled",
     title: "Do not show up",
-    tone: "warning",
+    tone: "critical",
     who: "Permissionless",
   },
 ];
@@ -63,10 +64,10 @@ export function Lifecycle() {
   return (
     <section className="mx-auto w-full max-w-6xl px-5 pb-28 sm:px-8">
       <ScrollReveal>
-        <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand">
           How it works
         </p>
-        <h2 className="mt-4 max-w-2xl text-3xl font-black leading-tight tracking-[-0.04em] sm:text-4xl">
+        <h2 className="mt-4 max-w-2xl text-3xl font-bold leading-tight tracking-[-0.04em] sm:text-4xl">
           One bond, four ways it can end — and the contract decides every one of
           them.
         </h2>
@@ -80,11 +81,11 @@ export function Lifecycle() {
       <ol className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((step, index) => (
           <ScrollReveal delaySeconds={index * 0.08} key={step.state}>
-            <li className="group relative flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.02] p-6 transition-colors duration-(--duration-component) hover:border-cyan-300/30 hover:bg-white/[0.04]">
+            <li className="group relative flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.02] p-6 transition-colors duration-(--duration-component) hover:border-brand/30 hover:bg-white/[0.04]">
               <span className="num text-xs font-bold text-slate-600">
                 0{index + 1}
               </span>
-              <h3 className="mt-3 text-xl font-black tracking-tight">
+              <h3 className="mt-3 text-xl font-bold tracking-tight">
                 {step.title}
               </h3>
               <p className="mt-3 flex-1 text-sm leading-6 text-slate-400">
@@ -109,6 +110,11 @@ export function Lifecycle() {
           from locking a bond.
         </p>
       </ScrollReveal>
+
+      <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-8 text-sm text-slate-500">
+        <Logo className="text-slate-300" size={24} variant="lockup" />
+        <p>Contract-enforced attendance bonds on Stellar Testnet.</p>
+      </footer>
     </section>
   );
 }

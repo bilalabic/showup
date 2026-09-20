@@ -55,7 +55,7 @@ export function BondCard() {
     >
       <div
         aria-hidden="true"
-        className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-cyan-300/10 blur-2xl"
+        className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-brand/10 blur-2xl"
       />
 
       <m.div
@@ -70,7 +70,7 @@ export function BondCard() {
 
         <div className="flex items-start justify-between gap-6">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">
               Commitment bond
             </p>
             <h2 className="mt-3 text-2xl font-bold">Design Meetup Istanbul</h2>
@@ -85,20 +85,20 @@ export function BondCard() {
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
             Refundable bond
           </p>
-          <p className="mt-2 text-4xl font-black tracking-[-0.04em] text-white">
+          <p className="mt-2 text-4xl font-bold tracking-[-0.04em] text-white">
             <NumberTicker
               format={fromStroops}
               suffix="USDC"
               value={SAMPLE_BOND}
             />
-            <span className="ml-2 text-lg font-bold text-cyan-300">USDC</span>
+            <span className="ml-2 text-lg font-bold text-brand">USDC</span>
           </p>
         </div>
 
         <dl className="mt-4 divide-y divide-white/10 rounded-2xl border border-white/10 bg-slate-950/50 px-5">
           <div className="flex items-center justify-between gap-6 py-4">
             <dt className="text-sm text-slate-400">Network</dt>
-            <dd className="text-sm font-bold text-cyan-300">Testnet</dd>
+            <dd className="text-sm font-bold text-brand">Testnet</dd>
           </div>
           <div className="flex items-center justify-between gap-6 py-4">
             <dt className="text-sm text-slate-400">Custody</dt>

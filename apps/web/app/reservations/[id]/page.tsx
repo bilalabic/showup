@@ -1,26 +1,48 @@
 "use client";
 
 import Link from "next/link";
-import { use, useMemo } from "react";
+import { use, useMemo, useRef, useState } from "react";
 
 import { QrPass } from "@/components/qr/qr-pass";
+import {
+  TxStatus,
+  txFailureState,
+  type TxState,
+} from "@/components/tx/tx-status";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/ui/money";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
-import { getEvent, getReservation } from "@/lib/contract";
-import type { EventView, ReservationView } from "@/lib/domain";
+import { EnableUsdcAction } from "@/components/wallet/enable-usdc-action";
+import {
+  cancelReservation,
+  claimCancelledRefund,
+  getEvent,
+  getReservation,
+  type TxPhase,
+} from "@/lib/contract";
+import {
+  canCancelReservation,
+  canClaimCancelledRefund,
+  type EventView,
+  type ReservationView,
+} from "@/lib/domain";
 import { reservationBucket } from "@/lib/domain/reservation-buckets";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { encodePass } from "@/lib/qr";
-import { getLedgerNow } from "@/lib/stellar";
+import {
+  getAccountAssets,
+  getLedgerNow,
+  type AccountAssets,
+} from "@/lib/stellar";
 import { useWallet } from "@/lib/wallet/provider";
 
 type ReservationSnapshot = {
   event: EventView;
   ledgerNow: number;
   reservation: ReservationView | null;
+  assets: AccountAssets | null;
 };
 
 const MAX_U64 = (1n << 64n) - 1n;
@@ -75,8 +97,8 @@ function statusTone(
   if (reservation.status === "attended") return "positive";
   if (reservation.status === "cancelled") return "neutral";
   if (reservation.status === "refunded") return "neutral";
-  if (reservation.status === "no_show_settled") return "warning";
-  if (event.status === "cancelled") return "critical";
+  if (reservation.status === "no_show_settled") return "critical";
+  if (event.status === "cancelled") return "neutral";
   return "accent";
 }
 
@@ -95,17 +117,23 @@ export default function ReservationPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { address, connect, status } = useWallet();
+  const { address, canTransact, connect, signTransaction, status } = useWallet();
   const eventId = useMemo(() => parseEventId(id), [id]);
+  const [confirmation, setConfirmation] = useState<"cancel" | "refund" | null>(
+    null,
+  );
+  const [tx, setTx] = useState<TxState>({ kind: "idle" });
+  const actionBusy = useRef(false);
 
   const state = useAsyncData<ReservationSnapshot>(
     async () => {
-      const [event, ledgerNow, reservation] = await Promise.all([
+      const [event, ledgerNow, reservation, assets] = await Promise.all([
         getEvent(eventId!),
         getLedgerNow(),
         getReservation(eventId!, address!),
+        getAccountAssets(address!).catch(() => null),
       ]);
-      return { event, ledgerNow, reservation };
+      return { event, ledgerNow, reservation, assets };
     },
     [eventId, address],
     { enabled: eventId !== null && Boolean(address) },
@@ -114,7 +142,7 @@ export default function ReservationPage({
   if (eventId === null) {
     return (
       <main className="mx-auto w-full max-w-3xl px-5 py-20 sm:px-8">
-        <h1 className="text-3xl font-black tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           Invalid reservation link
         </h1>
         <p className="mt-3 text-slate-400">
@@ -130,10 +158,10 @@ export default function ReservationPage({
   if (!address) {
     return (
       <main className="mx-auto w-full max-w-3xl px-5 py-20 sm:px-8">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">
           Reservation #{eventId.toString()}
         </p>
-        <h1 className="mt-3 text-3xl font-black tracking-tight">
+        <h1 className="mt-3 text-3xl font-bold tracking-tight">
           Connect your participant wallet
         </h1>
         <p className="mt-3 max-w-xl leading-7 text-slate-400">
@@ -179,12 +207,12 @@ export default function ReservationPage({
     );
   }
 
-  const { event, ledgerNow, reservation } = state.data;
+  const { assets, event, ledgerNow, reservation } = state.data;
 
   if (!reservation) {
     return (
       <main className="mx-auto w-full max-w-3xl px-5 py-20 sm:px-8">
-        <h1 className="text-3xl font-black tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           No reservation for this wallet
         </h1>
         <p className="mt-3 text-slate-400">
@@ -202,14 +230,26 @@ export default function ReservationPage({
     );
   }
 
+  const currentReservation = reservation;
+  const ownsReservation = address === currentReservation.participant;
+  const canReceiveUsdc = assets === null || assets.hasUsdcTrustline;
+
   const hasActivePass =
-    event.status === "active" && reservation.status === "locked";
+    event.status === "active" && currentReservation.status === "locked";
+  const cancellationEligible =
+    ownsReservation &&
+    canCancelReservation(event, currentReservation, ledgerNow);
+  const refundEligible =
+    ownsReservation &&
+    canClaimCancelledRefund(event, currentReservation, ledgerNow);
+  const cancellationAvailable = cancellationEligible && canReceiveUsdc;
+  const refundAvailable = refundEligible && canReceiveUsdc;
   let qrPayload: string | null = null;
   if (hasActivePass) {
     try {
       qrPayload = encodePass({
         eventId: event.id,
-        participant: reservation.participant,
+        participant: currentReservation.participant,
         issuedAt: ledgerNow,
       });
     } catch {
@@ -217,10 +257,56 @@ export default function ReservationPage({
     }
   }
 
+  async function runAction(kind: "cancel" | "refund") {
+    if (!address || !canTransact || actionBusy.current) return;
+    if (kind === "cancel" && !cancellationAvailable) return;
+    if (kind === "refund" && !refundAvailable) return;
+
+    actionBusy.current = true;
+    setTx({ kind: "running", phase: "simulating" });
+    try {
+      const signer = { address, signTransaction };
+      const onPhase = (phase: TxPhase) =>
+        setTx({ kind: "running", phase });
+      const { hash } =
+        kind === "cancel"
+          ? await cancelReservation(event.id, signer, onPhase)
+          : await claimCancelledRefund(
+              event.id,
+              currentReservation.participant,
+              signer,
+              onPhase,
+            );
+
+      setConfirmation(null);
+      setTx({
+        kind: "success",
+        hash,
+        message:
+          kind === "cancel"
+            ? "Reservation cancelled. The contract returned the full bond."
+            : "Cancelled-event refund claimed. The contract returned the full bond.",
+        amountStroops: currentReservation.amount,
+        amountCaption: "returned to the participant",
+      });
+      state.reload();
+    } catch (error) {
+      setTx(
+        txFailureState(
+          error,
+          "The contract action could not be completed. Refresh and try again.",
+        ),
+      );
+      state.reload();
+    } finally {
+      actionBusy.current = false;
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-14 sm:px-8">
       <Link
-        className="text-sm font-semibold text-slate-400 transition hover:text-cyan-300"
+        className="text-sm font-semibold text-slate-400 transition hover:text-brand"
         href="/reservations"
       >
         ← Your reservations
@@ -238,7 +324,7 @@ export default function ReservationPage({
         </StatusBadge>
       </div>
 
-      <h1 className="mt-6 text-4xl font-black leading-tight tracking-[-0.045em] sm:text-5xl">
+      <h1 className="mt-6 text-4xl font-bold leading-tight tracking-[-0.045em] sm:text-5xl">
         {event.title}
       </h1>
       <p className="mt-3 text-lg text-slate-400">{event.venue}</p>
@@ -260,14 +346,14 @@ export default function ReservationPage({
       </section>
 
       {hasActivePass && qrPayload ? (
-        <section className="glass mt-8 rounded-3xl border-cyan-300/25 p-6 sm:p-8">
+        <section className="glass mt-8 rounded-3xl border-brand/25 p-6 sm:p-8">
           <div className="grid items-center gap-8 sm:grid-cols-[280px_1fr]">
             <QrPass payload={qrPayload} />
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">
                 Check-in pass
               </p>
-              <h2 className="mt-3 text-2xl font-black">
+              <h2 className="mt-3 text-2xl font-bold">
                 Show this to the organizer
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-300">
@@ -292,9 +378,97 @@ export default function ReservationPage({
         </p>
       )}
 
+      {(cancellationEligible || refundEligible) && !canReceiveUsdc ? (
+        <section className="mt-8">
+          <p className="mb-3 rounded-2xl border border-amber-300/25 bg-amber-300/5 px-5 py-4 text-sm leading-6 text-amber-100">
+            This account no longer has the USDC trustline needed to receive the bond. Re-enable it before cancelling or claiming a refund.
+          </p>
+          <EnableUsdcAction assets={assets} onSuccess={state.reload} />
+        </section>
+      ) : cancellationAvailable || refundAvailable ? (
+        <section className="glass mt-8 rounded-3xl px-6 py-6">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+            Bond action
+          </p>
+          {confirmation === null ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold">
+                  {refundAvailable
+                    ? "Claim the cancelled-event refund"
+                    : "Cancel this reservation"}
+                </h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
+                  {refundAvailable
+                    ? "The event is cancelled. This pull-refund returns the full locked bond to the participant."
+                    : `Cancellation is available until ${formatMoment(event.cancellationDeadline)} and returns the full locked bond.`}
+                </p>
+              </div>
+              <Button
+                disabled={!canTransact || tx.kind === "running"}
+                onClick={() => {
+                  setTx({ kind: "idle" });
+                  setConfirmation(refundAvailable ? "refund" : "cancel");
+                }}
+                type="button"
+                variant={refundAvailable ? "default" : "destructive"}
+              >
+                {refundAvailable ? "Claim full refund" : "Cancel reservation"}
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-300/5 px-5 py-5">
+              <h2 className="font-bold text-amber-100">
+                {confirmation === "cancel"
+                  ? "Confirm reservation cancellation"
+                  : "Confirm refund claim"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                This wallet will sign one Testnet transaction. The action is
+                final once confirmed on a ledger, and the contract returns {" "}
+                <span className="font-mono font-bold text-white">
+                  <Money stroops={reservation.amount} />
+                </span>{" "}
+                to {reservation.participant}.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Button
+                  disabled={tx.kind === "running"}
+                  onClick={() => void runAction(confirmation)}
+                  type="button"
+                  variant={confirmation === "cancel" ? "destructive" : "default"}
+                >
+                  {tx.kind === "running"
+                    ? "Working…"
+                    : confirmation === "cancel"
+                      ? "Sign cancellation"
+                      : "Sign refund claim"}
+                </Button>
+                <Button
+                  disabled={tx.kind === "running"}
+                  onClick={() => setConfirmation(null)}
+                  type="button"
+                  variant="outline"
+                >
+                  {confirmation === "cancel" ? "Keep reservation" : "Not now"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
+      ) : reservation.status === "locked" && event.status === "active" ? (
+        <p className="mt-8 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm leading-6 text-slate-300">
+          The free-cancellation window closed at {formatMoment(event.cancellationDeadline)}. The bond remains locked for check-in or no-show settlement.
+        </p>
+      ) : null}
+
+      <div className="mt-4">
+        <TxStatus state={tx} />
+      </div>
+
       <details className="mt-12 rounded-2xl border border-white/10 bg-slate-950/60 px-5 py-4">
         <summary className="cursor-pointer text-sm font-semibold text-slate-300">
-          Technical details
+          Reservation record
         </summary>
         <dl className="mt-4 space-y-3 font-mono text-xs text-slate-400">
           <div className="flex flex-wrap justify-between gap-2">

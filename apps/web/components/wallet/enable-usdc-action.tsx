@@ -2,44 +2,47 @@
 
 import { useState } from "react";
 
-import { TxStatus, type TxState } from "@/components/tx/tx-status";
+import {
+  TxStatus,
+  txFailureState,
+  type TxState,
+} from "@/components/tx/tx-status";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { buildChangeTrust, submitSignedTransaction } from "@/lib/stellar";
-import { isWalletError } from "@/lib/wallet/port";
+import { XlmFundingNotice } from "@/components/wallet/xlm-funding-notice";
+import { fromStroops } from "@/lib/domain";
+import {
+  CHANGE_TRUST_FEE_STROOPS,
+  buildChangeTrust,
+  requiredForNewSubentry,
+  submitSignedTransaction,
+  type AccountAssets,
+} from "@/lib/stellar";
 import { useWallet } from "@/lib/wallet/provider";
 
-function failureMessage(error: unknown): string {
-  if (isWalletError(error)) {
-    switch (error.kind) {
-      case "rejected":
-        return "You declined the signature. Nothing was changed and nothing was spent.";
-      case "wrong_network":
-        return "Freighter is not on Stellar Testnet. Switch networks and try again.";
-      case "no_wallet":
-        return "Freighter is not available. Install or unlock it, then try again.";
-      case "not_connected":
-        return "Your wallet disconnected. Reconnect and try again.";
-      default:
-        return "The wallet could not complete the signature. Please try again.";
-    }
-  }
-
-  return error instanceof Error && error.message
-    ? error.message
-    : "USDC could not be enabled. Please try again.";
-}
-
 export function EnableUsdcAction({
+  assets,
   onSuccess,
 }: {
+  assets?: AccountAssets | null;
   onSuccess?: () => void;
 }) {
   const { address, canTransact, signTransaction } = useWallet();
   const [tx, setTx] = useState<TxState>({ kind: "idle" });
   const busy = tx.kind === "running";
+  const xlmRequired = assets
+    ? requiredForNewSubentry(
+        assets.baseReserve,
+        CHANGE_TRUST_FEE_STROOPS,
+      )
+    : null;
+  const insufficientXlm =
+    assets?.exists === true &&
+    !assets.hasUsdcTrustline &&
+    xlmRequired !== null &&
+    assets.spendableXlm < xlmRequired;
 
   async function enableUsdc() {
-    if (!address) return;
+    if (!address || insufficientXlm) return;
 
     setTx({ kind: "running", phase: "simulating" });
     try {
@@ -55,23 +58,36 @@ export function EnableUsdcAction({
       });
       onSuccess?.();
     } catch (error) {
-      setTx({ kind: "failed", message: failureMessage(error) });
+      setTx(txFailureState(error, "USDC could not be enabled. Please try again."));
     }
   }
 
   return (
-    <section className="glass rounded-3xl border-cyan-300/25 px-5 py-6">
-      <h2 className="text-lg font-black tracking-tight text-cyan-100">
+    <section className="glass rounded-3xl border-brand/25 px-5 py-6">
+      <h2 className="text-lg font-bold tracking-tight text-brand-soft">
         Enable USDC to continue
       </h2>
-      <p className="mt-2 text-sm leading-6 text-cyan-100/80">
+      <p className="mt-2 text-sm leading-6 text-brand-soft/80">
         Stellar accounts opt in to each asset they hold. This is one signature
-        and locks 0.5 XLM as a reserve. The reserve is not spent and is released
-        if the trustline is removed later.
+        and locks one network base reserve
+        {assets?.exists
+          ? ` (${fromStroops(assets.baseReserve)} XLM at the latest ledger)`
+          : ""}
+        . The reserve is not spent and is released if the trustline is removed
+        later.
       </p>
+      {insufficientXlm && address ? (
+        <div className="mt-5">
+          <XlmFundingNotice address={address}>
+            The current Testnet reserve and transaction fee require more
+            spendable XLM before this trustline can be added. Account reserves
+            are locked, not spent.
+          </XlmFundingNotice>
+        </div>
+      ) : null}
       <SubmitButton
         className="mt-5"
-        disabled={!canTransact}
+        disabled={!canTransact || insufficientXlm}
         onClick={() => void enableUsdc()}
         pending={busy}
         pendingLabel="Working…"

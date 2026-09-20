@@ -10,9 +10,12 @@ export {
   DEFAULT_RPC_URL,
   TESTNET_NETWORK_PASSPHRASE,
   getLedgerNow,
+  getLedgerSnapshot,
   getRpc,
   getRpcUrl,
 } from "./rpc";
+
+export type { LedgerSnapshot } from "./rpc";
 
 export {
   CONTRACT_ERROR_PATTERN,
@@ -23,6 +26,7 @@ export { classifyTxError, isTxFailure } from "./tx-result";
 
 export {
   DEFAULT_HORIZON_URL,
+  CHANGE_TRUST_FEE_STROOPS,
   USDC_CODE,
   USDC_ISSUER,
   buildChangeTrust,
@@ -35,6 +39,13 @@ export {
 } from "./horizon";
 
 export type { AccountAssets } from "./horizon";
+
+export {
+  calculateXlmReservePosition,
+  requiredForNewSubentry,
+} from "./xlm-reserve";
+
+export type { XlmReserveInput, XlmReservePosition } from "./xlm-reserve";
 
 export { buildClaimWithTrustlineXdr } from "./claimable-balance";
 export type { BuildClaimOptions } from "./claimable-balance";

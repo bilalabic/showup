@@ -13,19 +13,19 @@ export type StatusTone =
   | "critical";
 
 const TONE: Record<StatusTone, string> = {
-  neutral: "border-white/12 bg-white/5 text-slate-300",
-  accent: "border-cyan-300/25 bg-cyan-300/10 text-cyan-200",
-  positive: "border-emerald-300/25 bg-emerald-300/10 text-emerald-200",
-  warning: "border-amber-300/25 bg-amber-300/10 text-amber-100",
-  critical: "border-rose-400/25 bg-rose-400/10 text-rose-200",
+  neutral: "border-status-neutral/25 bg-status-neutral/10 text-slate-300",
+  accent: "border-status-locked/25 bg-status-locked/10 text-brand-soft",
+  positive: "border-status-success/25 bg-status-success/10 text-emerald-200",
+  warning: "border-status-community/25 bg-status-community/10 text-amber-100",
+  critical: "border-status-no-show/25 bg-status-no-show/10 text-rose-200",
 };
 
 const DOT: Record<StatusTone, string> = {
-  neutral: "bg-slate-400",
-  accent: "bg-cyan-300",
-  positive: "bg-emerald-300",
-  warning: "bg-amber-300",
-  critical: "bg-rose-400",
+  neutral: "bg-status-neutral",
+  accent: "bg-status-locked",
+  positive: "bg-status-success",
+  warning: "bg-status-community",
+  critical: "bg-status-no-show",
 };
 
 /**

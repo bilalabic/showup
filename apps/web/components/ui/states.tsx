@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/components/ui/utils";
 import { useWallet } from "@/lib/wallet/provider";
+import { userFacingError } from "@/lib/domain";
 
 /**
  * Every route needs the same four states. They are built once here so that a
@@ -79,7 +80,7 @@ export function EmptyState({
   return (
     <m.div className={cn(SURFACE, className)} {...entrance}>
       {title ? (
-        <h2 className="text-lg font-black tracking-tight text-white">
+        <h2 className="text-lg font-bold tracking-tight text-white">
           {title}
         </h2>
       ) : null}
@@ -104,7 +105,7 @@ export function ErrorState({
   title?: string;
 }) {
   const entrance = useEntrance();
-  const message = error instanceof Error && error.message ? error.message : fallback;
+  const message = userFacingError(error, fallback);
 
   return (
     <m.div

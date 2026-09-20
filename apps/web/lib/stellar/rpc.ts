@@ -51,6 +51,24 @@ export function getRpc(): rpc.Server {
   return cachedServer;
 }
 
+export type LedgerSnapshot = {
+  sequence: number;
+  closeTime: number;
+};
+
+/** The latest ledger number and close time, for diagnostics and UI clocks. */
+export async function getLedgerSnapshot(): Promise<LedgerSnapshot> {
+  const latest = await getRpc().getLatestLedger();
+  const sequence = Number(latest.sequence);
+  const closeTime = Number(latest.closeTime);
+
+  if (!Number.isSafeInteger(sequence) || !Number.isFinite(closeTime)) {
+    throw new Error("Stellar RPC returned an unusable latest-ledger response.");
+  }
+
+  return { sequence, closeTime: Math.floor(closeTime) };
+}
+
 /**
  * The ledger close time, in Unix seconds.
  *
@@ -60,14 +78,5 @@ export function getRpc(): rpc.Server {
  * who changes their clock changes nothing.
  */
 export async function getLedgerNow(): Promise<number> {
-  const latest = await getRpc().getLatestLedger();
-  const closeTime = Number(latest.closeTime);
-
-  if (!Number.isFinite(closeTime)) {
-    throw new Error(
-      `Stellar RPC returned an unusable ledger close time: ${String(latest.closeTime)}`,
-    );
-  }
-
-  return Math.floor(closeTime);
+  return (await getLedgerSnapshot()).closeTime;
 }

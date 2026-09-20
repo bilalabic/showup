@@ -51,8 +51,8 @@ export function CapacityMeter({
           className={cn(
             "h-full w-full origin-left rounded-full",
             full
-              ? "bg-gradient-to-r from-amber-300 to-rose-400"
-              : "bg-gradient-to-r from-cyan-400 to-cyan-200",
+              ? "bg-status-community"
+              : "bg-brand",
           )}
           initial={reduceMotion ? false : { scaleX: 0 }}
           transition={

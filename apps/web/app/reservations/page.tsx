@@ -14,23 +14,24 @@ import {
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getReservation, listEvents } from "@/lib/contract";
-import type { EventView, ReservationView } from "@/lib/domain";
 import {
   reservationBucket,
   type ReservationBucket,
 } from "@/lib/domain/reservation-buckets";
+import {
+  collectReservationResults,
+  type ReadableReservation,
+} from "@/lib/domain/reservation-results";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { getLedgerNow } from "@/lib/stellar";
 import { useWallet } from "@/lib/wallet/provider";
 
-type ReservationItem = {
-  event: EventView;
-  reservation: ReservationView;
-};
+type ReservationItem = ReadableReservation;
 
 type ReservationSnapshot = {
   ledgerNow: number;
   items: ReservationItem[];
+  unreadable: number;
 };
 
 const BUCKETS: Array<{
@@ -83,13 +84,13 @@ function statusCopy(
     return { label: "Event cancelled · refund claimed", tone: "neutral" };
   }
   if (reservation.status === "no_show_settled") {
-    return { label: "No-show settlement confirmed", tone: "warning" };
+    return { label: "No-show settlement confirmed", tone: "critical" };
   }
   if (event.status === "cancelled") {
-    return { label: "Event cancelled · refund available", tone: "critical" };
+    return { label: "Event cancelled · refund available", tone: "neutral" };
   }
   if (bucket === "no_show") {
-    return { label: "Check-in closed · awaiting settlement", tone: "warning" };
+    return { label: "Check-in closed · awaiting settlement", tone: "critical" };
   }
   return { label: "Bond locked · ready for check-in", tone: "accent" };
 }
@@ -104,15 +105,12 @@ export default function ReservationsPage() {
         listEvents(),
         getLedgerNow(),
       ]);
-      const reservations = await Promise.all(
+      const reservations = await Promise.allSettled(
         events.map((event) => getReservation(event.id, address!)),
       );
-      const items = events.flatMap((event, index) => {
-        const reservation = reservations[index];
-        return reservation ? [{ event, reservation }] : [];
-      });
+      const { items, unreadable } = collectReservationResults(events, reservations);
 
-      return { ledgerNow, items };
+      return { ledgerNow, items, unreadable };
     },
     [address],
     { enabled: Boolean(address) },
@@ -121,10 +119,10 @@ export default function ReservationsPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-14 sm:px-8">
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">
           Participant
         </p>
-        <h1 className="mt-3 text-4xl font-black tracking-[-0.04em]">
+        <h1 className="mt-3 text-4xl font-bold tracking-[-0.04em]">
           Your reservations
         </h1>
         <p className="mt-3 max-w-2xl leading-7 text-slate-400">
@@ -148,18 +146,39 @@ export default function ReservationsPage() {
             onRetry={state.reload}
             title="Could not read your reservations"
           />
-        ) : state.data.items.length === 0 ? (
-          <EmptyState
-            action={
-              <Button asChild variant="outline">
-                <Link href="/">Back to home</Link>
-              </Button>
-            }
-            title="Nothing reserved yet"
-          >
-            This wallet holds no ShowUp reservation on this contract.
-          </EmptyState>
         ) : (
+          <>
+            {state.data.unreadable > 0 ? (
+              <p className="mb-5 rounded-2xl border border-amber-300/25 bg-amber-300/5 px-5 py-4 text-sm leading-6 text-amber-100">
+                {state.data.unreadable} event record
+                {state.data.unreadable === 1 ? "" : "s"} could not be read from
+                contract storage. Readable reservations are still shown below.
+              </p>
+            ) : null}
+            {state.data.items.length === 0 ? (
+              <EmptyState
+                action={
+                  state.data.unreadable > 0 ? (
+                    <Button onClick={state.reload} type="button" variant="outline">
+                      Try again
+                    </Button>
+                  ) : (
+                    <Button asChild variant="outline">
+                      <Link href="/">Back to home</Link>
+                    </Button>
+                  )
+                }
+                title={
+                  state.data.unreadable > 0
+                    ? "Reservations temporarily unavailable"
+                    : "Nothing reserved yet"
+                }
+              >
+                {state.data.unreadable > 0
+                  ? "No reservation records were readable in this attempt."
+                  : "This wallet holds no ShowUp reservation on this contract."}
+              </EmptyState>
+            ) : (
           <Tabs className="gap-6" defaultValue="upcoming">
             <TabsList className="h-auto w-full flex-wrap gap-1 rounded-2xl bg-white/5 p-1.5 sm:w-fit">
               {BUCKETS.map((bucket) => {
@@ -174,7 +193,7 @@ export default function ReservationsPage() {
 
                 return (
                   <TabsTrigger
-                    className="min-h-11 rounded-xl px-4 font-semibold data-[state=active]:bg-slate-950 data-[state=active]:text-cyan-200 data-[state=active]:ring-1 data-[state=active]:ring-inset data-[state=active]:ring-cyan-300/25"
+                    className="min-h-11 rounded-xl px-4 font-semibold data-[state=active]:bg-slate-950 data-[state=active]:text-brand-soft data-[state=active]:ring-1 data-[state=active]:ring-inset data-[state=active]:ring-brand/25"
                     key={bucket.key}
                     value={bucket.key}
                   >
@@ -222,11 +241,11 @@ export default function ReservationsPage() {
                             }}
                           >
                             <Link
-                              className="grid gap-4 rounded-3xl border border-white/10 bg-white/[0.02] px-5 py-5 transition-[border-color,background-color,transform,box-shadow] duration-(--duration-component) ease-(--ease-out-soft) hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-white/[0.05] hover:shadow-[0_24px_50px_-32px_rgba(103,232,249,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 motion-reduce:hover:translate-y-0 sm:grid-cols-[1fr_auto] sm:items-center"
+                              className="grid gap-4 rounded-3xl border border-white/10 bg-white/[0.02] px-5 py-5 transition-[border-color,background-color,transform,box-shadow] duration-(--duration-component) ease-(--ease-out-soft) hover:-translate-y-0.5 hover:border-brand/40 hover:bg-white/[0.05] hover:shadow-[0_24px_50px_-32px_rgba(77,230,198,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand motion-reduce:hover:translate-y-0 sm:grid-cols-[1fr_auto] sm:items-center"
                               href={`/reservations/${item.event.id}`}
                             >
                               <div className="min-w-0">
-                                <p className="text-lg font-black tracking-tight">
+                                <p className="text-lg font-bold tracking-tight">
                                   {item.event.title}
                                 </p>
                                 <p className="mt-1 text-sm text-slate-400">
@@ -243,7 +262,7 @@ export default function ReservationsPage() {
                                 </div>
                               </div>
                               <div className="sm:text-right">
-                                <p className="text-lg font-black text-white">
+                                <p className="text-lg font-bold text-white">
                                   <Money stroops={item.reservation.amount} />
                                 </p>
                                 <p className="num mt-1 text-xs text-slate-500">
@@ -260,6 +279,8 @@ export default function ReservationsPage() {
               );
             })}
           </Tabs>
+            )}
+          </>
         )}
       </div>
     </main>

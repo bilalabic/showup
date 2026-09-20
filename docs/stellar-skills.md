@@ -61,13 +61,16 @@ that the SDK major version tracks the protocol version.
 
 Source: `github.com/yigitcangokmen/stellar-hackathon-turkiye` → `SKILL.md`
 
-Documents the TR Mock Anchor integration: `stellar.toml` discovery, SEP-10
-challenge/JWT, auto-approved SEP-12 KYC, SEP-38 quotes, SEP-6 deposit and
-withdraw, the mock-only `POST /sep6/tx/{id}/simulate-bank-transfer` endpoint, the
-50–3,000 TRY deposit range, the 1 USDC withdraw minimum, and the `pending_trust`
-trustline requirement.
+The source describes `stellar.toml` discovery, SEP-10, simulated SEP-12,
+SEP-38, SEP-6 and the mock-only bank-transfer trigger. Live implementation work
+corrected three source assumptions: ShowUp's authenticated SEP-6 path needs no
+separate SEP-12 call; the modern no-trustline path may complete through a
+claimable balance; and the Anchor's reported limits have changed and disagreed
+between endpoints, so no range is hard-coded. The server response remains
+authoritative.
 
-**Used: yes — Phase 0**, to verify the Anchor values recorded in `.env.example`.
+**Used: yes**, then verified against the Anchor's live discovery document,
+health response and endpoint behavior before coding.
 
 ---
 

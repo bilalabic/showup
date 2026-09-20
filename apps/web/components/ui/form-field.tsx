@@ -40,7 +40,7 @@ export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="num min-h-11 w-full rounded-xl border border-white/12 bg-slate-950/60 px-4 py-2.5 text-sm text-white outline-none transition-[border-color,box-shadow] duration-(--duration-micro) placeholder:text-slate-500 focus-visible:border-cyan-300/60 focus-visible:ring-2 focus-visible:ring-cyan-300/20 disabled:opacity-50 [color-scheme:dark]"
+      className="num min-h-11 w-full rounded-xl border border-white/12 bg-slate-950/60 px-4 py-2.5 text-sm text-white outline-none transition-[border-color,box-shadow] duration-(--duration-micro) placeholder:text-slate-500 focus-visible:border-brand/60 focus-visible:ring-2 focus-visible:ring-brand/20 disabled:opacity-50 [color-scheme:dark]"
     />
   );
 }

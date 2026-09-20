@@ -37,6 +37,8 @@ export {
   contractErrorMessage,
   contractErrorName,
   isContractErrorCode,
+  transactionHashFromError,
+  userFacingError,
 } from "./errors";
 
 export {

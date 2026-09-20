@@ -8,10 +8,16 @@ import { PolicyPreview } from "@/components/organizer/policy-preview";
 import { Button } from "@/components/ui/button";
 import { FormField, TextInput } from "@/components/ui/form-field";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { TxStatus, type TxState } from "@/components/tx/tx-status";
+import {
+  TxStatus,
+  txFailureState,
+  type TxState,
+} from "@/components/tx/tx-status";
+import { XlmFundingNotice } from "@/components/wallet/xlm-funding-notice";
 import { createEvent, type CreateEventInput, type TxPhase } from "@/lib/contract";
 import { toStroops } from "@/lib/domain";
-import { isWalletError } from "@/lib/wallet/port";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { getAccountAssets, type AccountAssets } from "@/lib/stellar";
 import { useWallet } from "@/lib/wallet/provider";
 
 // Mirrors the contract's own bounds in contracts/showup-bond/src/types.rs. The
@@ -108,38 +114,22 @@ function validate(values: FormValues): FieldErrors {
   return errors;
 }
 
-// Wallet failures arrive as a typed union rather than an Error, so they need
-// their own copy — a rejected signature is not a fault the user should see as
-// "something went wrong".
-function failureMessage(error: unknown): string {
-  if (isWalletError(error)) {
-    switch (error.kind) {
-      case "rejected":
-        return "You declined the signature. Nothing was created and nothing was spent.";
-      case "wrong_network":
-        return "Freighter is not on Stellar Testnet. Switch networks and try again.";
-      case "no_wallet":
-        return "Freighter is not available. Install or unlock it, then try again.";
-      case "not_connected":
-        return "Your wallet disconnected. Reconnect and try again.";
-      default:
-        return "The wallet could not complete the signature. Please try again.";
-    }
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "The event could not be created. Please try again.";
-}
-
 export default function NewEventPage() {
   const router = useRouter();
   const { address, canTransact, connect, signTransaction, status } = useWallet();
   const [values, setValues] = useState<FormValues>(EMPTY);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [tx, setTx] = useState<TxState>({ kind: "idle" });
+  const accountState = useAsyncData<AccountAssets | null>(
+    () => getAccountAssets(address!),
+    [address],
+    { enabled: Boolean(address) },
+  );
+  const accountAssets =
+    accountState.status === "ready" ? accountState.data : null;
+  const insufficientXlm =
+    accountAssets !== null &&
+    (!accountAssets.exists || accountAssets.spendableXlm === 0n);
 
   const communityShare = useMemo(() => {
     const share = Number(values.organizerShare);
@@ -178,7 +168,7 @@ export default function NewEventPage() {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!address) return;
+    if (!address || insufficientXlm) return;
 
     const found = validate(values);
     setErrors(found);
@@ -218,20 +208,25 @@ export default function NewEventPage() {
       });
       router.push(`/events/${eventId}`);
     } catch (error) {
-      setTx({ kind: "failed", message: failureMessage(error) });
+      setTx(
+        txFailureState(
+          error,
+          "The event could not be created. Refresh and try again.",
+        ),
+      );
     }
   }
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-14 sm:px-8">
       <Link
-        className="text-sm font-semibold text-slate-400 transition hover:text-cyan-300"
+        className="text-sm font-semibold text-slate-400 transition hover:text-brand"
         href="/organizer"
       >
         ← Your events
       </Link>
 
-      <h1 className="mt-6 text-4xl font-black tracking-[-0.04em]">
+      <h1 className="mt-6 text-4xl font-bold tracking-[-0.04em]">
         Create an event
       </h1>
       <p className="mt-3 max-w-xl leading-7 text-slate-400">
@@ -257,11 +252,28 @@ export default function NewEventPage() {
         </div>
       ) : null}
 
+      {canTransact && insufficientXlm && address ? (
+        <div className="mt-8">
+          <XlmFundingNotice
+            address={address}
+            title={
+              accountAssets?.exists
+                ? "Add spendable Testnet XLM"
+                : "Fund this Testnet account"
+            }
+          >
+            {accountAssets?.exists
+              ? "This account has no XLM available above its current reserve and native liabilities, so it cannot pay for an event-creation transaction."
+              : "This account does not exist on Testnet yet. Friendbot can create and fund it before you publish an event."}
+          </XlmFundingNotice>
+        </div>
+      ) : null}
+
       <div className="mt-10 grid items-start gap-8 lg:grid-cols-[1.35fr_0.65fr]">
       <form className="flex flex-col gap-8" onSubmit={onSubmit}>
         <fieldset
           className="flex flex-col gap-6 disabled:opacity-50"
-          disabled={!canTransact || busy}
+          disabled={!canTransact || busy || insufficientXlm}
         >
           <div className="grid gap-6 sm:grid-cols-2">
             <FormField error={errors.title} htmlFor="title" label="Event name">
@@ -385,7 +397,7 @@ export default function NewEventPage() {
 
         <SubmitButton
           className="self-start"
-          disabled={!canTransact}
+          disabled={!canTransact || insufficientXlm}
           pending={busy}
           pendingLabel="Creating…"
           size="lg"

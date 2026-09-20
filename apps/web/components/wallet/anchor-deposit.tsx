@@ -2,7 +2,12 @@
 
 import { useEffect, useReducer, useRef, useState } from "react";
 
-import { TxStatus, type TxState } from "@/components/tx/tx-status";
+import { publishTechnicalEvidence } from "@/components/debug/evidence-events";
+import {
+  TxStatus,
+  txFailureState,
+  type TxState,
+} from "@/components/tx/tx-status";
 import { Button } from "@/components/ui/button";
 import { AnchorProgress } from "@/components/wallet/anchor-progress";
 import { EnableUsdcAction } from "@/components/wallet/enable-usdc-action";
@@ -31,6 +36,7 @@ import {
   type AnchorConfig,
   type PersistedDeposit,
 } from "@/lib/anchor";
+import { userFacingError } from "@/lib/domain";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import {
   buildClaimWithTrustlineXdr,
@@ -64,9 +70,10 @@ function failureMessage(error: unknown): string {
         return "The wallet could not complete the request. Please try again.";
     }
   }
-  return error instanceof Error && error.message
-    ? error.message
-    : "The funding request could not be completed.";
+  return userFacingError(
+    error,
+    "The funding request could not be completed. Please try again.",
+  );
 }
 
 function toMachineError(error: unknown): AnchorError {
@@ -124,6 +131,54 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
     },
     [],
   );
+
+  const activeQuote = state.context.quote;
+  const activeConfig = state.context.config;
+  const quoteExpired = state.context.quoteExpired;
+
+  useEffect(() => {
+    publishTechnicalEvidence({
+      quoteId: activeQuote?.id ?? null,
+      anchorTransactionId: state.context.depositId ?? null,
+    });
+  }, [activeQuote?.id, state.context.depositId]);
+
+  useEffect(() => {
+    if (!activeQuote || quoteExpired) return;
+
+    // Add a small boundary margin so Date.now(), rounded down to seconds by
+    // the reducer, cannot observe the quote one tick before expires_at.
+    const delay = Math.max(0, activeQuote.expiresAt * 1000 - Date.now() + 25);
+    const timeout = window.setTimeout(() => {
+      dispatch({
+        type: "QUOTE_EXPIRY_CHECKED",
+        nowSeconds: Math.floor(Date.now() / 1000),
+      });
+    }, delay);
+
+    return () => window.clearTimeout(timeout);
+  }, [activeQuote, quoteExpired]);
+
+  useEffect(() => {
+    if (!activeQuote || !activeConfig || !quoteExpired) return;
+
+    const controller = new AbortController();
+    void getIndicativePrice(activeQuote.sellAmount, {
+      config: activeConfig,
+      signal: controller.signal,
+    })
+      .then((price) => {
+        if (!controller.signal.aborted) {
+          dispatch({ type: "QUOTE_REPRICED", quoteId: activeQuote.id, price });
+        }
+      })
+      .catch(() => {
+        // Repricing is best-effort. Expiry remains warning-only and must never
+        // turn a valid deposit into an error.
+      });
+
+    return () => controller.abort();
+  }, [activeConfig, activeQuote, quoteExpired]);
 
   const signer = address ? { address, signTransaction } : null;
 
@@ -400,7 +455,12 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
       onSettled?.();
     } catch (error) {
       if (!controller.signal.aborted) {
-        setRecoveryTx({ kind: "failed", message: failureMessage(error) });
+        setRecoveryTx(
+          txFailureState(
+            error,
+            "The claim transaction could not be completed. Please try again.",
+          ),
+        );
       }
     } finally {
       finishFlow(controller);
@@ -423,7 +483,7 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
   return (
     <section className="glass mt-6 rounded-3xl px-5 py-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-black tracking-tight">Add funds with TRY</h2>
+        <h2 className="text-lg font-bold tracking-tight">Add funds with TRY</h2>
         <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-200">
           Testnet simulation
         </span>
@@ -464,7 +524,7 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
             TRY amount
           </label>
           <input
-            className="num w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 font-mono text-white outline-none transition focus-visible:border-cyan-300/60 focus-visible:ring-2 focus-visible:ring-cyan-300/20"
+            className="num w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 font-mono text-white outline-none transition focus-visible:border-brand/60 focus-visible:ring-2 focus-visible:ring-brand/20"
             id="anchor-try-amount"
             inputMode="decimal"
             onChange={(event) => setAmount(event.target.value)}
@@ -487,8 +547,8 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
       ) : null}
 
       {state.name === "PRICING" && state.context.price ? (
-        <div className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-300/5 px-4 py-4">
-          <p className="text-sm text-cyan-100">
+        <div className="mt-5 rounded-2xl border border-brand/20 bg-brand/5 px-4 py-4">
+          <p className="text-sm text-brand-soft">
             {state.context.price.sellAmount} TRY is about {state.context.price.buyAmount} USDC at the current indicative rate.
           </p>
           <p className="mt-2 text-xs text-slate-400">
@@ -512,7 +572,15 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
             ? `, including ${state.context.quote.fee.total} ${state.context.quote.fee.asset} in fees`
             : ""}.
           {state.context.quoteExpired ? (
-            <p className="mt-2 text-amber-200">{EXPIRED_QUOTE_WARNING}</p>
+            <div className="mt-2 text-amber-200">
+              <p>{EXPIRED_QUOTE_WARNING}</p>
+              {state.context.expiredQuotePrice ? (
+                <p className="mt-1 text-xs">
+                  Current indicative rate: {state.context.expiredQuotePrice.sellAmount} TRY is about{" "}
+                  {state.context.expiredQuotePrice.buyAmount} USDC.
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </div>
       ) : null}
@@ -642,7 +710,7 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
 
       {state.context.status?.stellarTransactionId ? (
         <a
-          className="mt-4 inline-block break-all font-mono text-xs text-cyan-300 underline underline-offset-4"
+          className="mt-4 inline-block break-all font-mono text-xs text-brand underline underline-offset-4"
           href={`https://stellar.expert/explorer/testnet/tx/${state.context.status.stellarTransactionId}`}
           rel="noreferrer noopener"
           target="_blank"
@@ -653,7 +721,7 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
 
       {safeHttpUrl(state.context.status?.moreInfoUrl) ? (
         <a
-          className="mt-4 ml-3 inline-block text-xs font-semibold text-cyan-300 underline underline-offset-4"
+          className="mt-4 ml-3 inline-block text-xs font-semibold text-brand underline underline-offset-4"
           href={safeHttpUrl(state.context.status?.moreInfoUrl)}
           rel="noreferrer noopener"
           target="_blank"

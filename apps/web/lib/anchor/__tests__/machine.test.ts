@@ -376,6 +376,49 @@ describe("quote expiry never blocks the deposit", () => {
     expect(state.context.quoteExpired).toBe(false);
   });
 
+  it("re-evaluates an active quote when its expiry time arrives", () => {
+    const active = openDeposit(QUOTE_EXPIRES_AT_SECONDS - 1);
+    const expired = depositReducer(active, {
+      type: "QUOTE_EXPIRY_CHECKED",
+      nowSeconds: QUOTE_EXPIRES_AT_SECONDS,
+    });
+
+    expect(expired.name).toBe("AWAITING_BANK_TRANSFER");
+    expect(expired.context.quoteExpired).toBe(true);
+    expect(expired.context.error).toBeUndefined();
+  });
+
+  it("keeps the refreshed indicative price separate from the expired firm quote", () => {
+    const active = openDeposit(QUOTE_EXPIRES_AT_SECONDS - 1);
+    const expired = depositReducer(active, {
+      type: "QUOTE_EXPIRY_CHECKED",
+      nowSeconds: QUOTE_EXPIRES_AT_SECONDS,
+    });
+    const refreshedPrice = { ...price, buyAmount: "3.9500000" };
+    const repriced = depositReducer(expired, {
+      type: "QUOTE_REPRICED",
+      quoteId: quote.id,
+      price: refreshedPrice,
+    });
+
+    expect(repriced.context.quote).toBe(quote);
+    expect(repriced.context.expiredQuotePrice).toBe(refreshedPrice);
+    expect(repriced.name).toBe("AWAITING_BANK_TRANSFER");
+  });
+
+  it("ignores late repricing for an unrelated quote", () => {
+    const expired = depositReducer(
+      openDeposit(QUOTE_EXPIRES_AT_SECONDS + 1),
+      {
+        type: "QUOTE_REPRICED",
+        quoteId: "quote_from_an_old_flow",
+        price,
+      },
+    );
+
+    expect(expired.context.expiredQuotePrice).toBeUndefined();
+  });
+
   it("a deposit with no quote at all still proceeds", () => {
     let state = depositReducer(initialDepositState, { type: "START" });
     state = depositReducer(state, { type: "DISCOVERED", config });

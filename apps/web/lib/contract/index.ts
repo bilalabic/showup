@@ -305,6 +305,10 @@ export async function createEvent(
       sent.sendTransactionResponse?.hash ??
       (tx.signed ? toHex(tx.signed.hash()) : "");
 
+    if (!hash) {
+      throw new Error("The transaction was confirmed without a transaction hash.");
+    }
+
     return { eventId: unwrapResult(sent.result), hash };
   } catch (error) {
     throw translateContractError(error);
