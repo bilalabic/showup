@@ -26,6 +26,9 @@ ShowUp adds a refundable bond without giving the organizer custody.”
 Open `/organizer/events/new`, show the schedule, bond and exact organizer /
 community split, then sign. Open the confirmed Explorer link.
 
+Use the **Check-in open now** preset. The other presets schedule a future
+evening, which leaves an event that cannot be checked into during the demo.
+
 ### 3. Fund with TRY — 35 seconds
 
 In the participant profile, open the public event and point out the exact USDC
@@ -78,10 +81,13 @@ exposing secrets.
 
 | Step | Identifier |
 |---|---|
-| Browser-created event | Pending |
-| Anchor deposit id + Stellar payment | Pending |
-| Reserve | Pending |
+| Browser-created event | `329cf218…4e9dce` (event 18) |
+| Anchor deposit id + Stellar payment | `sep_c3awgubgw3jk1sh4owp5` · `f66e2f17…d05c56fd` |
+| Reserve | `f53c2122…be717843` (event 18) |
 | Check-in/refund | Pending |
-| No-show settlement | Pending |
+| No-show settlement | `e17cfd91…fb930d350` (event 10, CLI-signed) |
 | Reservation cancellation | Pending |
 | Event cancellation + pulled refund | Pending |
+
+Full hashes and Explorer links live in the root README's **Submission
+evidence** table; this one is the presenter's cue card.

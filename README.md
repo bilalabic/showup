@@ -9,22 +9,29 @@ Rise In × Stellar Pro Hackathon Türkiye 2026 — **Genesis** track — **Stell
 
 > The P0 product is deployed and the bond lifecycle is verified on-chain — see
 > **Submission evidence** for the reserve, check-in refund and 80/20 no-show
-> settlement transactions. Browser-signed equivalents and a completed Mock
-> Anchor on-ramp are still being captured; this README never presents a pending
-> item as complete.
+> settlement transactions, the browser-signed event creation and reservation,
+> and a Mock Anchor on-ramp that settled end to end. This README never presents
+> a pending item as complete.
 
 ### Try it in two minutes
 
 1. Open the demo and install [Freighter](https://www.freighter.app/), set to **Testnet**.
 2. `/wallet` → fund the account with friendbot, then **Enable USDC**.
-3. `/events` → open an event, read the full policy, and **Reserve**.
+3. From the landing page follow **View latest event** to `/events/[id]`, read the
+   full policy, and **Reserve**.
 4. `/reservations/[id]` → your QR pass. The organizer scans it at
    `/organizer/events/[id]/scan` and signs the check-in; the contract returns
-   the bond in the same transaction.
+   the bond in the same transaction. If the camera is unavailable, that page's
+   **Manual fallback** takes the participant address instead.
 
-Mock USDC normally arrives through the Anchor on `/wallet`. While that service's
-on-ramp worker is degraded, the [Circle testnet faucet](https://faucet.circle.com)
-issues the same asset.
+Mock USDC arrives through the Anchor on `/wallet`. If its on-ramp worker is
+degraded, the [Circle testnet faucet](https://faucet.circle.com) issues the same
+asset.
+
+Creating your own event to try the full round: on `/organizer/events/new`, the
+**Check-in open now** preset fills a schedule whose check-in window is already
+open, so the reserve and check-in can be done back to back. The other presets
+schedule a future evening.
 
 ## Why
 
@@ -335,6 +342,11 @@ steps, in order:
   success.
 - USDC → TRY withdrawal is P1 and does not gate the P0 demo.
 
+## Team
+
+- [@bilalabic](https://github.com/bilalabic)
+- **Berzan Baran** — [@BerzanBaran](https://github.com/BerzanBaran)
+
 ## Submission evidence
 
 | Item | Evidence |
@@ -349,9 +361,9 @@ steps, in order:
 | **No-show settlement** (event 10, 80/20) | [e17cfd91b3c289df03f928a88406bce3d3e122206ba6bd88737bd63fb930d350](https://stellar.expert/explorer/testnet/tx/e17cfd91b3c289df03f928a88406bce3d3e122206ba6bd88737bd63fb930d350) |
 | **Browser-signed reserve** (event 11, Freighter) | [09a4dbb9e7d121b6940ed5fc11f39faff27886ef0a323317e60c844b81d055c6](https://stellar.expert/explorer/testnet/tx/09a4dbb9e7d121b6940ed5fc11f39faff27886ef0a323317e60c844b81d055c6) |
 | Matching refund (event 11) | [ee6512c079e255e1b173e051d79c44064c2cd9588f8d4261d6764ed71ae48d02](https://stellar.expert/explorer/testnet/tx/ee6512c079e255e1b173e051d79c44064c2cd9588f8d4261d6764ed71ae48d02) |
-| **Browser-signed create_event** (event 15, Freighter) | [f5e4781e2653913b05a44aadcd57d4ae71341b0211b862316d79355d8e362c16](https://stellar.expert/explorer/testnet/tx/f5e4781e2653913b05a44aadcd57d4ae71341b0211b862316d79355d8e362c16) |
-| **Browser-signed reserve** (event 15, Freighter) | [f0d6998dc443400207bb10d2ccea98ce02dd719298ffaddbf8929bb702ef0655](https://stellar.expert/explorer/testnet/tx/f0d6998dc443400207bb10d2ccea98ce02dd719298ffaddbf8929bb702ef0655) |
-| Browser-signed check-in | **Pending.** Event 15 was created with a next-day check-in window, so its window is not open yet. A same-session round needs an event whose check-in window is already open. |
+| **Browser-signed create_event** (event 18, Freighter) | [329cf218a9e82b537347cd4495fbdaffe883d0696af1caf2958b0909464e9dce](https://stellar.expert/explorer/testnet/tx/329cf218a9e82b537347cd4495fbdaffe883d0696af1caf2958b0909464e9dce) |
+| **Browser-signed reserve** (event 18, Freighter) | [f53c212241c094d5ec105641920a72f9769e6012bc8eac165bae665dbe717843](https://stellar.expert/explorer/testnet/tx/f53c212241c094d5ec105641920a72f9769e6012bc8eac165bae665dbe717843) |
+| Browser-signed check-in (event 18) | **Pending owner signature** |
 | **Anchor deposit** — SEP-6 id `sep_c3awgubgw3jk1sh4owp5`, 150.00 TRY → 3.0594136 USDC (0.75 TRY fee), external ref `TRMA-S5X3-PLQV` | [f66e2f1745ba6c96fe3c943425fabdcad746d05fa897ea83cd5bd737d05c56fd](https://stellar.expert/explorer/testnet/tx/f66e2f1745ba6c96fe3c943425fabdcad746d05fa897ea83cd5bd737d05c56fd) |
 | Public demo URL | [showup-steel.vercel.app](https://showup-steel.vercel.app) |
 | Public repository | [github.com/bilalabic/showup](https://github.com/bilalabic/showup) |

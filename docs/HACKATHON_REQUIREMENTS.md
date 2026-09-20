@@ -12,7 +12,7 @@ yet been captured; it is not silently counted as complete.
 | Mock USDC trustline and balances | Horizon asset/reserve layer and `/wallet` | Implemented; live signature pending |
 | Public TRY estimate | SEP-38 `/price` on event detail | Implemented and unit tested |
 | Mock Anchor TRY → USDC | SEP-1/10/38/6 client and deposit state machine | Live deposit completed: `sep_c3awgubgw3jk1sh4owp5`, 150 TRY → 3.0594136 USDC |
-| Exact bond reservation | Event detail transaction flow | Browser-signed hashes recorded (events 11 and 15) |
+| Exact bond reservation | Event detail transaction flow | Browser-signed hashes recorded (events 11 and 18) |
 | Reservation discovery | Retention-aware contract-event index | Implemented; incomplete history is disclosed |
 | QR check-in and refund | Reservation pass + organizer scanner | Refund hashes recorded (events 9 and 11); browser-signed check-in pending |
 | Cancellation/refund | Participant and organizer actions | Implemented; hashes pending |
@@ -25,10 +25,9 @@ yet been captured; it is not silently counted as complete.
 
 ## Definition-of-Done evidence still requiring a browser wallet
 
-1. Check in from the browser and record the hash. Event 15 was created and
-   reserved in the browser, but its check-in window opens the next day, so the
-   round could not be closed in the same session. This needs an event whose
-   check-in window is already open when the reservation is made.
+1. Check in from the browser and record the hash. Event 18 was created and
+   reserved in the browser with an already-open check-in window; only the
+   verifier signature is outstanding.
 2. Settle a no-show from the browser and record the split hash. The split itself
    is proven on chain, but CLI-signed.
 3. Cancel a reservation and an event from the browser, claim the refund, and
