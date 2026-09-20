@@ -17,6 +17,11 @@ Rise In × Stellar Pro Hackathon Türkiye 2026 — **Genesis** track — **Stell
 > pending item as complete.
 
 ### Try it in two minutes
+The organizer sets the refundable bond, capacity, check-in window, and the
+published no-show split. Once the first bond is locked, the policy cannot change
+
+<img width="1220" height="902" alt="Screenshot 2026-09-20 111923" src="https://github.com/user-attachments/assets/3ad8eb34-ab3b-4785-a4de-37bee4a35ada" />
+
 
 1. Open the demo and install [Freighter](https://www.freighter.app/), set to **Testnet**.
 2. `/wallet` → fund the account with friendbot, then **Enable USDC**.
