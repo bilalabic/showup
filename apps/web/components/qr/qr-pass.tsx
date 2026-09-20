@@ -2,7 +2,13 @@
 
 import { useEffect, useRef } from "react";
 
-export function QrPass({ payload }: { payload: string }) {
+export function QrPass({
+  payload,
+  label = "ShowUp reservation QR code",
+}: {
+  payload: string;
+  label?: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -16,7 +22,7 @@ export function QrPass({ payload }: { payload: string }) {
 
       const svg = new BrowserQRCodeSvgWriter().write(payload, 280, 280);
       svg.setAttribute("role", "img");
-      svg.setAttribute("aria-label", "ShowUp reservation QR code");
+      svg.setAttribute("aria-label", label);
       svg.classList.add("h-auto", "w-full", "max-w-[280px]");
       container.replaceChildren(svg);
     })();
@@ -25,7 +31,7 @@ export function QrPass({ payload }: { payload: string }) {
       cancelled = true;
       container.replaceChildren();
     };
-  }, [payload]);
+  }, [label, payload]);
 
   return (
     <div

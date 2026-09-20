@@ -53,6 +53,13 @@ file; transaction signing stays in the user's wallet.
 
 ## Reservation and check-in boundary
 
+- Public event pages are readable without a wallet. Their share control uses
+  the Web Share API when available and clipboard copy everywhere else.
+  Organizer views can show a QR containing that same public URL; it is a link,
+  never a reservation or check-in credential.
+- Active locked reservations offer a prefilled Google Calendar link and a
+  client-generated `.ics` file. Both use the event start and check-in deadline;
+  neither sends wallet addresses or requires calendar API access.
 - `/reservations` and `/reservations/[id]` read the connected participant's
   current contract records and render a QR pass only for an active locked bond.
 - `lib/qr` encodes a strict, size-limited identifier payload. It contains no

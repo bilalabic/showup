@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useMemo, useRef, useState } from "react";
 
+import { EventShare } from "@/components/events/event-share";
 import {
   TxStatus,
   txFailureState,
@@ -214,6 +215,11 @@ export default function OrganizerEventPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <EventShare
+            eventId={event.id.toString()}
+            showQr
+            title={event.title}
+          />
           <Link
             className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold transition hover:border-brand/50"
             href={`/events/${event.id.toString()}`}

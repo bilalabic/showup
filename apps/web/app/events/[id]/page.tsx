@@ -4,12 +4,14 @@ import Link from "next/link";
 import { m, useReducedMotion } from "motion/react";
 import { use, useMemo, useState } from "react";
 
+import { EventShare } from "@/components/events/event-share";
 import {
   TxStatus,
   txFailureState,
   type TxState,
 } from "@/components/tx/tx-status";
 import { Button } from "@/components/ui/button";
+import { CalendarLinks } from "@/components/ui/calendar-links";
 import { CapacityMeter } from "@/components/ui/capacity-meter";
 import { Countdown } from "@/components/ui/countdown";
 import { Money } from "@/components/ui/money";
@@ -340,6 +342,11 @@ export default function EventPage({
       <p className="mt-3 text-lg text-slate-400 [overflow-wrap:anywhere]">
         {event.venue}
       </p>
+      <EventShare
+        className="mt-5"
+        eventId={event.id.toString()}
+        title={event.title}
+      />
 
       <section className="glass mt-10 grid gap-6 rounded-3xl p-6 sm:grid-cols-2">
         <div>
@@ -402,11 +409,16 @@ export default function EventPage({
               You already hold this reservation. Bond status:{" "}
               {reservation.status.replaceAll("_", " ")}.
             </p>
-            <Button asChild className="mt-4" size="sm" variant="secondary">
-              <Link href={`/reservations/${event.id.toString()}`}>
-                Open reservation pass
-              </Link>
-            </Button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild size="sm" variant="secondary">
+                <Link href={`/reservations/${event.id.toString()}`}>
+                  Open reservation pass
+                </Link>
+              </Button>
+              {reservation.status === "locked" && event.status === "active" ? (
+                <CalendarLinks event={event} />
+              ) : null}
+            </div>
           </div>
         ) : cancelled ? (
           <p className="rounded-3xl border border-rose-400/25 bg-rose-400/[0.06] px-5 py-5 text-sm leading-6 text-rose-100">

@@ -10,6 +10,7 @@ import {
   type TxState,
 } from "@/components/tx/tx-status";
 import { Button } from "@/components/ui/button";
+import { CalendarLinks } from "@/components/ui/calendar-links";
 import { Money } from "@/components/ui/money";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/ui/states";
@@ -366,6 +367,7 @@ export default function ReservationPage({
               <p className="mt-4 break-all font-mono text-xs text-slate-500">
                 {reservation.participant}
               </p>
+              <CalendarLinks className="mt-5" event={event} />
             </div>
           </div>
         </section>
