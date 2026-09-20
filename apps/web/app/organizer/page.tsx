@@ -94,10 +94,10 @@ export default function OrganizerPage() {
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-lg font-bold tracking-tight">
+                      <p className="text-lg font-bold tracking-tight [overflow-wrap:anywhere]">
                         {event.title}
                       </p>
-                      <p className="mt-1 text-sm text-slate-400">
+                      <p className="mt-1 text-sm text-slate-400 [overflow-wrap:anywhere]">
                         {event.venue}
                       </p>
                     </div>

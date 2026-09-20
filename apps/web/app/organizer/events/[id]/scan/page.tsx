@@ -226,7 +226,7 @@ export default function ScanPage({
   if (state.status === "loading") {
     return (
       <main className="mx-auto w-full max-w-4xl px-5 py-14 sm:px-8">
-        <div className="h-10 w-72 animate-pulse rounded-xl bg-white/10" />
+        <div className="h-10 w-full max-w-72 animate-pulse rounded-xl bg-white/10" />
         <div className="mt-8 h-96 animate-pulse rounded-3xl bg-white/5" />
       </main>
     );
@@ -261,7 +261,7 @@ export default function ScanPage({
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-12 sm:px-8">
       <Link
-        className="text-sm font-semibold text-slate-400 transition hover:text-brand"
+        className="block text-sm font-semibold text-slate-400 transition [overflow-wrap:anywhere] hover:text-brand"
         href={`/organizer/events/${event.id.toString()}`}
       >
         ← {event.title}

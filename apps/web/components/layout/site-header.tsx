@@ -60,10 +60,10 @@ export function SiteHeader() {
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10"
       />
 
-      <div className="mx-auto flex min-h-20 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
+      <div className="mx-auto flex min-h-20 max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-8">
         <Link
           aria-label="ShowUp home"
-          className="group flex items-center gap-3 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
+          className="group flex shrink-0 items-center gap-3 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
           href="/"
         >
           <m.span
@@ -73,7 +73,7 @@ export function SiteHeader() {
           >
             <Logo animated size={40} variant="mark" />
           </m.span>
-          <span>
+          <span className="hidden sm:block">
             <span className="font-headline block text-base font-bold tracking-[-0.03em]">
               ShowUp
             </span>
@@ -83,7 +83,7 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav className="flex min-w-0 items-center gap-1 sm:gap-2">
           {NAV.map((item) => {
             const active =
               pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -95,7 +95,11 @@ export function SiteHeader() {
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
                   // The full set needs room; the least-used link drops first on
                   // a narrow viewport rather than every link shrinking.
-                  item.compact ? "inline-flex" : "hidden sm:inline-flex",
+                  item.href === "/organizer"
+                    ? "hidden min-[360px]:inline-flex"
+                    : item.compact
+                      ? "inline-flex"
+                      : "hidden sm:inline-flex",
                   active ? "text-brand-soft" : "text-slate-300 hover:text-brand-soft",
                 )}
                 href={item.href}

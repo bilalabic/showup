@@ -245,10 +245,10 @@ export default function ReservationsPage() {
                               href={`/reservations/${item.event.id}`}
                             >
                               <div className="min-w-0">
-                                <p className="text-lg font-bold tracking-tight">
+                                <p className="text-lg font-bold tracking-tight [overflow-wrap:anywhere]">
                                   {item.event.title}
                                 </p>
-                                <p className="mt-1 text-sm text-slate-400">
+                                <p className="mt-1 text-sm text-slate-400 [overflow-wrap:anywhere]">
                                   {item.event.venue} ·{" "}
                                   {formatMoment(item.event.startTime)}
                                 </p>

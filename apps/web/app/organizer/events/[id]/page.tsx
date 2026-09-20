@@ -92,7 +92,7 @@ export default function OrganizerEventPage({
   if (state.status === "loading") {
     return (
       <main className="mx-auto w-full max-w-5xl px-5 py-14 sm:px-8">
-        <div className="h-10 w-72 animate-pulse rounded-xl bg-white/10" />
+        <div className="h-10 w-full max-w-72 animate-pulse rounded-xl bg-white/10" />
         <div className="mt-8 h-72 animate-pulse rounded-3xl bg-white/5" />
       </main>
     );
@@ -206,8 +206,12 @@ export default function OrganizerEventPage({
               {event.status}
             </StatusBadge>
           </div>
-          <h1 className="mt-2 text-4xl font-bold tracking-[-0.04em]">{event.title}</h1>
-          <p className="mt-2 text-slate-400">{event.venue}</p>
+          <h1 className="mt-2 text-4xl font-bold tracking-[-0.04em] [overflow-wrap:anywhere]">
+            {event.title}
+          </h1>
+          <p className="mt-2 text-slate-400 [overflow-wrap:anywhere]">
+            {event.venue}
+          </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link

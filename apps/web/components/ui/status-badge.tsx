@@ -55,7 +55,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-grid shrink-0 grid-cols-[auto_1fr] items-center gap-2 rounded-full border px-3 py-1.5",
+        "inline-grid max-w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-full border px-3 py-1.5",
         "text-xs font-bold tracking-tight",
         "transition-colors duration-(--duration-component) ease-(--ease-out-soft)",
         TONE[tone],
@@ -73,11 +73,11 @@ export function StatusBadge({
           />
         ) : null}
       </span>
-      <span className="grid">
+      <span className="grid min-w-0">
         <AnimatePresence initial={false} mode="popLayout">
           <m.span
             animate={{ opacity: 1, y: 0 }}
-            className="col-start-1 row-start-1"
+            className="col-start-1 row-start-1 [overflow-wrap:anywhere]"
             exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
             initial={reduceMotion ? false : { opacity: 0, y: 6 }}
             key={label}

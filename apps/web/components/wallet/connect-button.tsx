@@ -36,7 +36,8 @@ export function ConnectButton() {
           type="button"
           variant="outline"
         >
-          Disconnect
+          <span className="sm:hidden">Leave</span>
+          <span className="hidden sm:inline">Disconnect</span>
         </Button>
       </div>
     );
@@ -49,10 +50,20 @@ export function ConnectButton() {
         onClick={() => void connect()}
         type="button"
       >
-        {status === "connecting" ? "Connecting…" : "Connect Freighter"}
+        {status === "connecting" ? (
+          "Connecting…"
+        ) : (
+          <>
+            <span className="sm:hidden">Connect</span>
+            <span className="hidden sm:inline">Connect Freighter</span>
+          </>
+        )}
       </Button>
       {error && error.kind !== "rejected" && error.kind !== "wrong_network" ? (
-        <span className="max-w-52 text-right text-xs text-rose-300" role="status">
+        <span
+          className="max-w-28 text-right text-[10px] leading-4 text-rose-300 sm:max-w-52 sm:text-xs"
+          role="status"
+        >
           {errorMessage(error.kind)}
         </span>
       ) : null}

@@ -67,9 +67,9 @@ function formatMoment(unixSeconds: number): string {
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-6 py-4">
+    <div className="flex flex-col gap-1 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
       <dt className="text-sm text-slate-400">{label}</dt>
-      <dd className="text-right text-sm font-semibold text-white">{value}</dd>
+      <dd className="text-sm font-semibold text-white sm:text-right">{value}</dd>
     </div>
   );
 }
@@ -334,10 +334,12 @@ export default function EventPage({
         )}
       </div>
 
-      <h1 className="mt-6 text-4xl font-bold leading-tight tracking-[-0.045em] sm:text-5xl">
+      <h1 className="mt-6 text-4xl font-bold leading-tight tracking-[-0.045em] [overflow-wrap:anywhere] sm:text-5xl">
         {event.title}
       </h1>
-      <p className="mt-3 text-lg text-slate-400">{event.venue}</p>
+      <p className="mt-3 text-lg text-slate-400 [overflow-wrap:anywhere]">
+        {event.venue}
+      </p>
 
       <section className="glass mt-10 grid gap-6 rounded-3xl p-6 sm:grid-cols-2">
         <div>

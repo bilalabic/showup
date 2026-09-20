@@ -123,7 +123,7 @@ export function AnchorProgress({ name }: { name: DepositStateName }) {
                 </span>
                 <span
                   className={cn(
-                    "text-center text-[10px] font-bold uppercase tracking-[0.1em] transition-colors",
+                    "text-center text-[9px] font-bold uppercase tracking-[0.03em] transition-colors sm:text-[10px] sm:tracking-[0.1em]",
                     done && "text-brand-soft/70",
                     current && "text-brand-soft",
                     !done && !current && "text-slate-500",

@@ -104,9 +104,9 @@ function statusTone(
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-6 py-4">
+    <div className="flex flex-col gap-1 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
       <dt className="text-sm text-slate-400">{label}</dt>
-      <dd className="text-right text-sm font-semibold text-white">{value}</dd>
+      <dd className="text-sm font-semibold text-white sm:text-right">{value}</dd>
     </div>
   );
 }
@@ -187,7 +187,7 @@ export default function ReservationPage({
         aria-label="Loading reservation"
       >
         <Skeleton className="h-8 w-56 rounded-xl bg-white/8" />
-        <Skeleton className="mt-4 h-5 w-80 rounded-lg bg-white/5" />
+        <Skeleton className="mt-4 h-5 w-full max-w-80 rounded-lg bg-white/5" />
         <Skeleton className="mt-10 h-72 rounded-3xl bg-white/5" />
         <Skeleton className="mt-4 h-80 rounded-3xl bg-white/5" />
       </main>
@@ -324,10 +324,12 @@ export default function ReservationPage({
         </StatusBadge>
       </div>
 
-      <h1 className="mt-6 text-4xl font-bold leading-tight tracking-[-0.045em] sm:text-5xl">
+      <h1 className="mt-6 text-4xl font-bold leading-tight tracking-[-0.045em] [overflow-wrap:anywhere] sm:text-5xl">
         {event.title}
       </h1>
-      <p className="mt-3 text-lg text-slate-400">{event.venue}</p>
+      <p className="mt-3 text-lg text-slate-400 [overflow-wrap:anywhere]">
+        {event.venue}
+      </p>
 
       <section className="glass mt-10 rounded-3xl px-6 py-2">
         <dl className="divide-y divide-white/10">
