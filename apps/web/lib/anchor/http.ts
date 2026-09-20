@@ -38,7 +38,8 @@ export function buildUrl(
   query: Record<string, string | number | undefined> = {},
 ): string {
   const trimmedBase = base.replace(/\/+$/, "");
-  const trimmedPath = path.startsWith("/") ? path : `/${path}`;
+  const trimmedPath =
+    path.length === 0 ? "" : path.startsWith("/") ? path : `/${path}`;
   const url = new URL(`${trimmedBase}${trimmedPath}`);
 
   for (const [key, value] of Object.entries(query)) {

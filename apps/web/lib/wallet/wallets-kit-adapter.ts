@@ -242,7 +242,12 @@ export function createWalletsKitAdapter(): Wallet {
         if (!(await isFreighterAvailable(runtime))) {
           throw { kind: "no_wallet" } satisfies WalletError;
         }
-        const { address } = await runtime.kit.authModal();
+
+        // Only Freighter is registered on desktop, so a second wallet-picker
+        // modal adds no choice. Fetching through the Kit opens Freighter's own
+        // permission prompt directly and avoids rendering the Kit's internal
+        // Twind UI (2.6.0 contains the invalid `easy-in-out` class).
+        const { address } = await runtime.kit.fetchAddress();
         assertTestnet(await readNetwork(runtime));
         return address;
       } catch (error) {

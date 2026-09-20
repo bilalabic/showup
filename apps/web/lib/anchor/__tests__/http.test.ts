@@ -141,6 +141,14 @@ describe("anchorRequest failure mapping", () => {
 });
 
 describe("buildUrl", () => {
+  it("preserves an exact discovered endpoint when no child path is requested", () => {
+    expect(
+      buildUrl("https://tr-mock-anchor.fly.dev/auth", "", {
+        account: "GCLIENT",
+      }),
+    ).toBe("https://tr-mock-anchor.fly.dev/auth?account=GCLIENT");
+  });
+
   it("drops empty and undefined parameters instead of sending them", () => {
     const url = buildUrl("https://tr-mock-anchor.fly.dev/sep6", "/deposit", {
       asset_code: "USDC",
