@@ -1,4 +1,6 @@
 # ShowUp
+<img width="1186" height="896" alt="Screenshot 2026-09-20 110520" src="https://github.com/user-attachments/assets/71b76fa6-52ce-4fb5-a02f-e765e26df8fe" />
+
 
 **Programmable attendance commitment bonds for events and reservations, on Stellar.**
 
