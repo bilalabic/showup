@@ -21,6 +21,7 @@ import {
   eveningStart,
   nextSaturdayEvening,
   scheduleAroundStart,
+  startingSoon,
 } from "@/lib/domain/event-schedule";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { getAccountAssets, type AccountAssets } from "@/lib/stellar";
@@ -184,12 +185,14 @@ export default function NewEventPage() {
     }));
   }
 
-  function applyPreset(kind: "tomorrow" | "saturday") {
+  function applyPreset(kind: "now" | "tomorrow" | "saturday") {
     const now = Date.now();
     const startTime =
-      kind === "tomorrow"
-        ? eveningStart(now, 1)
-        : nextSaturdayEvening(now);
+      kind === "now"
+        ? startingSoon(now)
+        : kind === "tomorrow"
+          ? eveningStart(now, 1)
+          : nextSaturdayEvening(now);
     applySchedule(startTime);
   }
 
@@ -364,6 +367,14 @@ export default function NewEventPage() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => applyPreset("now")}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Check-in open now
+                </Button>
                 <Button
                   onClick={() => applyPreset("tomorrow")}
                   size="sm"

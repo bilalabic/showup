@@ -38,6 +38,23 @@ export function scheduleAroundStart(startTime: string): EventSchedule | null {
   };
 }
 
+/**
+ * Return a start close enough that `scheduleAroundStart` leaves check-in
+ * already open: check-in opens 30 minutes before the start, so a start 20
+ * minutes out opens the window ten minutes ago and closes it in 80 minutes.
+ *
+ * Every other preset here schedules a future evening, which means anyone
+ * evaluating the app — or rehearsing the demo — creates an event they cannot
+ * check into until the next day. The contract is untouched: this only fills the
+ * form, and every deadline is still enforced against the ledger clock.
+ */
+export function startingSoon(nowMs: number): string {
+  const stepMs = EVENT_SCHEDULE_STEP_SECONDS * 1000;
+  const target = nowMs + 20 * MINUTE_MS;
+
+  return toLocalDateTimeValue(new Date(Math.ceil(target / stepMs) * stepMs));
+}
+
 /** Return a 19:00 local start `daysAhead` calendar days from the given time. */
 export function eveningStart(nowMs: number, daysAhead: number): string {
   const start = new Date(nowMs);

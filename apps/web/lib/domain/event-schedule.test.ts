@@ -4,6 +4,7 @@ import {
   eveningStart,
   nextSaturdayEvening,
   scheduleAroundStart,
+  startingSoon,
   toLocalDateTimeValue,
 } from "./event-schedule";
 
@@ -25,6 +26,28 @@ describe("event schedule helpers", () => {
 
   it("returns null for an invalid start", () => {
     expect(scheduleAroundStart("not-a-date")).toBeNull();
+  });
+
+  /**
+   * The point of this preset: the other two schedule a future evening, so an
+   * event created to rehearse or evaluate the demo cannot be checked into until
+   * the next day.
+   */
+  it("leaves the check-in window already open", () => {
+    const now = new Date(2026, 8, 20, 10, 52).getTime();
+    const startTime = startingSoon(now);
+    const schedule = scheduleAroundStart(startTime)!;
+
+    // 10:52 + 20 minutes is 11:12, rounded up to the five-minute step.
+    expect(startTime).toBe("2026-09-20T11:15");
+    expect(Date.parse(schedule.checkinStart)).toBeLessThanOrEqual(now);
+    expect(Date.parse(schedule.checkinDeadline)).toBeGreaterThan(now);
+  });
+
+  it("keeps the start on the five-minute step it is already on", () => {
+    const now = new Date(2026, 8, 20, 10, 55).getTime();
+
+    expect(startingSoon(now)).toBe("2026-09-20T11:15");
   });
 
   it("creates local evening presets", () => {
