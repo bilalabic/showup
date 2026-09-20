@@ -17,6 +17,7 @@ import {
   DEPOSIT_POLL_MAX_ATTEMPTS,
   EXPIRED_QUOTE_WARNING,
   clearDeposit,
+  contextualizeAnchorError,
   depositReducer,
   describeState,
   discover,
@@ -34,6 +35,7 @@ import {
   updateDeposit,
   withFreshToken,
   type AnchorConfig,
+  type AnchorOperation,
   type PersistedDeposit,
 } from "@/lib/anchor";
 import { userFacingError } from "@/lib/domain";
@@ -66,6 +68,8 @@ function failureMessage(error: unknown): string {
         return "Freighter is not available. Install or unlock it, then try again.";
       case "not_connected":
         return "Your wallet disconnected. Reconnect and try again.";
+      case "account_changed":
+        return "Freighter is using a different account. Reconnect the intended account and try again.";
       default:
         return "The wallet could not complete the request. Please try again.";
     }
@@ -180,7 +184,12 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
     return () => controller.abort();
   }, [activeConfig, activeQuote, quoteExpired]);
 
-  const signer = address ? { address, signTransaction } : null;
+  const signer = address
+    ? {
+        address,
+        signTransaction: (xdr: string) => signTransaction(xdr, address),
+      }
+    : null;
 
   function beginFlow(): AbortController | null {
     if (flowBusy.current) return null;
@@ -300,6 +309,7 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
 
     const config = state.context.config;
     const trimmed = amount.trim();
+    let operation: AnchorOperation = "sign_in";
     dispatch({ type: "AUTHENTICATE" });
 
     try {
@@ -310,6 +320,7 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
       if (controller.signal.aborted) return;
       dispatch({ type: "AUTHENTICATED" });
 
+      operation = "quote";
       const quote = await withFreshToken(
         signer,
         (token) =>
@@ -328,6 +339,7 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
         nowSeconds: Math.floor(Date.now() / 1000),
       });
 
+      operation = "deposit";
       const ticket = await withFreshToken(
         signer,
         (token) =>
@@ -352,7 +364,10 @@ export function AnchorDeposit({ onSettled }: { onSettled?: () => void }) {
       void pollUntilStopped(config, ticket.id);
     } catch (error) {
       if (!controller.signal.aborted) {
-        dispatch({ type: "FAILED", error: toMachineError(error) });
+        dispatch({
+          type: "FAILED",
+          error: contextualizeAnchorError(toMachineError(error), operation),
+        });
       }
     } finally {
       finishFlow(controller);

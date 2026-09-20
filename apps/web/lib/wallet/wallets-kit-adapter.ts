@@ -186,13 +186,25 @@ export function createWalletsKitAdapter(): Wallet {
       return readNetwork(await loadKit());
     },
 
-    async signTransaction(xdr) {
+    async signTransaction(xdr, expectedAddress) {
       try {
         const runtime = await loadKit();
         assertTestnet(await readNetwork(runtime));
-        const { signedTxXdr } = await runtime.kit.signTransaction(xdr, {
+        const address = expectedAddress ?? (await readAddress(runtime));
+        if (!address) {
+          throw { kind: "not_connected" } satisfies WalletError;
+        }
+        const { signedTxXdr, signerAddress } = await runtime.kit.signTransaction(xdr, {
           networkPassphrase: TESTNET_NETWORK_PASSPHRASE,
+          address,
         });
+        if (signerAddress && signerAddress !== address) {
+          throw {
+            kind: "account_changed",
+            actual: signerAddress,
+            expected: address,
+          } satisfies WalletError;
+        }
         return signedTxXdr;
       } catch (error) {
         throw toWalletError(error);

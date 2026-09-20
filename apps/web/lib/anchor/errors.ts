@@ -103,3 +103,30 @@ export function isAnchorError(value: unknown): value is AnchorError {
 export function isAuthenticationRequired(value: unknown): boolean {
   return isAnchorError(value) && value.kind === "authentication_required";
 }
+
+export type AnchorOperation = "sign_in" | "quote" | "deposit";
+
+const OPERATION_FAILURE: Readonly<Record<AnchorOperation, string>> = {
+  sign_in:
+    "The Anchor did not accept the Freighter sign-in. Reconnect the same wallet account and try again.",
+  quote:
+    "The Anchor could not create a firm quote. Check the amount and request a new rate.",
+  deposit:
+    "The Anchor could not open the deposit. Request a new quote and try again.",
+};
+
+/** Replace only the Anchor's empty generic rejection with step-specific recovery copy. */
+export function contextualizeAnchorError(
+  error: AnchorError,
+  operation: AnchorOperation,
+): AnchorError {
+  if (error.kind !== "server_rejected" || error.serverMessage) return error;
+
+  return new AnchorError(error.kind, OPERATION_FAILURE[operation], {
+    status: error.status,
+    serverType: error.serverType,
+    endpoint: error.endpoint,
+    recovery: error.recovery,
+    cause: error,
+  });
+}

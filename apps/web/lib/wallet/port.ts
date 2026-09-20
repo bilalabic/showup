@@ -5,6 +5,7 @@ export type WalletError =
   | { kind: "no_wallet" }
   | { kind: "rejected" }
   | { kind: "wrong_network"; actual: string; expected: string }
+  | { kind: "account_changed"; actual?: string; expected: string }
   | { kind: "not_connected" }
   | { kind: "unknown"; cause: unknown };
 
@@ -21,7 +22,7 @@ export interface Wallet {
   disconnect(): Promise<void>;
   getAddress(): Promise<string | null>;
   getNetwork(): Promise<string>;
-  signTransaction(xdr: string): Promise<string>;
+  signTransaction(xdr: string, expectedAddress?: string): Promise<string>;
   signAuthEntry?(entryXdr: string): Promise<string>;
   watchChanges?(
     listener: (snapshot: WalletSnapshot) => void,
@@ -37,6 +38,7 @@ export function isWalletError(value: unknown): value is WalletError {
     "no_wallet",
     "rejected",
     "wrong_network",
+    "account_changed",
     "not_connected",
     "unknown",
   ].includes(String(value.kind));

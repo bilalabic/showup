@@ -132,6 +132,8 @@ export function userFacingError(
       return "Freighter is not available. Install or unlock it, then try again.";
     case "not_connected":
       return "Your wallet disconnected. Reconnect and try again.";
+    case "account_changed":
+      return "Freighter is using a different account. Reconnect the intended account and try again.";
     case "restore_required":
       return "This on-chain record needs restoration before it can be used. Refresh and try again.";
     case "timeout":

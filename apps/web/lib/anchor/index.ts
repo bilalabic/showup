@@ -42,9 +42,11 @@ export {
 
 export {
   AnchorError,
+  contextualizeAnchorError,
   isAnchorError,
   isAuthenticationRequired,
 } from "./errors";
+export type { AnchorOperation } from "./errors";
 export type { AnchorErrorKind, AnchorRecovery } from "./errors";
 
 /** SEP-1. */

@@ -43,7 +43,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${spaceGrotesk.variable} ${spaceMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full text-white">
+      {/* Browser extensions may add attributes to `body` before React hydrates.
+          Limit the suppression to this element so genuine child-tree
+          hydration mismatches remain visible. */}
+      <body className="min-h-full text-white" suppressHydrationWarning>
         {/* A faint grain over the whole app. Large flat dark fields band on
             cheap panels; this costs one fixed, pointer-transparent layer. */}
         <div

@@ -48,7 +48,7 @@ export type WalletContextValue = WalletState & {
    * this rather than constructing an adapter of its own, so that every
    * signature goes through the same connection and network guard.
    */
-  signTransaction: (xdr: string) => Promise<string>;
+  signTransaction: (xdr: string, expectedAddress?: string) => Promise<string>;
 };
 
 type WalletProviderProps = {
@@ -260,15 +260,19 @@ export function WalletProvider({ children, wallet }: WalletProviderProps) {
     };
   }, [applySnapshot, commit, state.address, state.status]);
 
-  const signTransaction = useCallback(async (xdr: string) => {
+  const signTransaction = useCallback(async (xdr: string, expectedAddress?: string) => {
     try {
-      return await walletRef.current.signTransaction(xdr);
+      const address = expectedAddress ?? stateRef.current.address ?? undefined;
+      return await walletRef.current.signTransaction(xdr, address);
     } catch (error) {
       const walletError = isWalletError(error) ? error : toWalletError(error);
 
       // A wrong-network result at signing time must also move the UI into the
       // blocking state, not just fail this one call.
-      if (walletError.kind === "wrong_network") {
+      if (
+        walletError.kind === "wrong_network" ||
+        walletError.kind === "account_changed"
+      ) {
         commit(stateFromError(walletError, stateRef.current.address));
       }
 

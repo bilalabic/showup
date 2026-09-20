@@ -49,6 +49,9 @@ describe("userFacingError", () => {
 
   it("provides actionable wallet and timeout recovery", () => {
     expect(userFacingError({ kind: "rejected" })).toMatch(/declined/i);
+    expect(userFacingError({ kind: "account_changed" })).toMatch(
+      /different account/i,
+    );
     expect(userFacingError({ kind: "timeout" })).toMatch(/transaction link/i);
   });
 
