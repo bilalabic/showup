@@ -30,13 +30,42 @@ function cameraErrorMessage(error: unknown): string {
   }
 }
 
-function isExpectedFrameMiss(error: unknown): boolean {
-  const name = (error as { name?: unknown } | null)?.name;
-  return (
-    name === "NotFoundException" ||
-    name === "ChecksumException" ||
-    name === "FormatException"
-  );
+const FRAME_MISS_KINDS = new Set([
+  "NotFoundException",
+  "ChecksumException",
+  "FormatException",
+]);
+
+/**
+ * A frame without a readable code is the normal case, not a failure: the
+ * decoder reports one for every video frame until a QR appears.
+ *
+ * The check is on ZXing's `kind`, never on `name`. `name` comes from
+ * `ts-custom-error`, which assigns it from the constructor's function name — so
+ * a production build that mangles class names turns `"NotFoundException"` into
+ * something like `"t"`, every routine frame looks like a hard error, and the
+ * camera stops the moment it starts. `kind` is a static string literal and
+ * survives minification.
+ */
+export function isExpectedFrameMiss(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as {
+    getKind?: unknown;
+    constructor?: { kind?: unknown };
+    name?: unknown;
+  };
+
+  if (typeof candidate.getKind === "function") {
+    const kind = (candidate.getKind as () => unknown)();
+    if (typeof kind === "string") return FRAME_MISS_KINDS.has(kind);
+  }
+
+  const staticKind = candidate.constructor?.kind;
+  if (typeof staticKind === "string") return FRAME_MISS_KINDS.has(staticKind);
+
+  // Last resort for an unminified build or a future ZXing that drops `kind`.
+  return typeof candidate.name === "string" && FRAME_MISS_KINDS.has(candidate.name);
 }
 
 export function useScanner(onResult: (raw: string) => void) {
