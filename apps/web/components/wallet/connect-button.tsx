@@ -11,6 +11,8 @@ function errorMessage(kind: string): string {
   switch (kind) {
     case "no_wallet":
       return "Install or unlock Freighter to connect.";
+    case "mobile_wallet_unconfigured":
+      return "Mobile wallet connection is not configured yet.";
     case "not_connected":
       return "Freighter is not connected.";
     case "unknown":
@@ -54,8 +56,8 @@ export function ConnectButton() {
           "Connecting…"
         ) : (
           <>
-            <span className="sm:hidden">Connect</span>
-            <span className="hidden sm:inline">Connect Freighter</span>
+            <span className="sm:hidden">Open wallet</span>
+            <span className="hidden sm:inline">Connect wallet</span>
           </>
         )}
       </Button>
@@ -65,6 +67,19 @@ export function ConnectButton() {
           role="status"
         >
           {errorMessage(error.kind)}
+          {error.kind === "mobile_wallet_unconfigured" ? (
+            <>
+              {" "}
+              <a
+                className="underline underline-offset-2"
+                href="https://freighter.app/"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Get Freighter.
+              </a>
+            </>
+          ) : null}
         </span>
       ) : null}
     </div>

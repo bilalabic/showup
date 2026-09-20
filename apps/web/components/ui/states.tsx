@@ -37,7 +37,7 @@ function useEntrance() {
 export function ConnectPrompt({
   children,
   className,
-  label = "Connect Freighter",
+  label = "Connect wallet",
 }: {
   children: ReactNode;
   className?: string;

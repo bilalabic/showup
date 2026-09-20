@@ -287,7 +287,7 @@ export default function ScanPage({
             onClick={() => void connect()}
             type="button"
           >
-            {status === "connecting" ? "Connecting…" : "Connect Freighter"}
+            {status === "connecting" ? "Connecting…" : "Connect wallet"}
           </button>
         </section>
       ) : !authorized ? (

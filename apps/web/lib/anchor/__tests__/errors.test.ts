@@ -12,7 +12,7 @@ describe("contextualizeAnchorError", () => {
 
     const contextualized = contextualizeAnchorError(error, "sign_in");
 
-    expect(contextualized.userMessage).toMatch(/freighter sign-in/i);
+    expect(contextualized.userMessage).toMatch(/wallet sign-in/i);
     expect(contextualized.status).toBe(400);
     expect(contextualized.endpoint).toBe("https://anchor.example/auth");
   });

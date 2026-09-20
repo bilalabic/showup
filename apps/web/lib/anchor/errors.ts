@@ -108,7 +108,7 @@ export type AnchorOperation = "sign_in" | "quote" | "deposit";
 
 const OPERATION_FAILURE: Readonly<Record<AnchorOperation, string>> = {
   sign_in:
-    "The Anchor did not accept the Freighter sign-in. Reconnect the same wallet account and try again.",
+    "The Anchor did not accept the wallet sign-in. Reconnect the same wallet account and try again.",
   quote:
     "The Anchor could not create a firm quote. Check the amount and request a new rate.",
   deposit:

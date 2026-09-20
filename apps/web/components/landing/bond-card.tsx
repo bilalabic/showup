@@ -111,7 +111,7 @@ export function BondCard() {
         </dl>
 
         <p className="mt-5 rounded-2xl border border-dashed border-white/15 px-5 py-4 text-sm leading-6 text-slate-400">
-          Connect Freighter above to establish a Testnet session. No wallet
+          Connect your wallet above to establish a Testnet session. No wallet
           connection is requested automatically.
         </p>
       </m.div>

@@ -16,7 +16,7 @@ export function NetworkGuard() {
     >
       <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <p className="text-sm font-semibold">
-          ShowUp is Testnet-only. Switch Freighter to Stellar Testnet before
+          ShowUp is Testnet-only. Switch your wallet to Stellar Testnet before
           continuing; all transaction actions are blocked.
         </p>
         <button

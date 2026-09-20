@@ -43,7 +43,7 @@ export function txFailureState(error: unknown, fallback?: string): TxState {
 // ledger has confirmed it.
 const PHASE_COPY: Record<TxPhase, string> = {
   simulating: "Checking the request against the contract…",
-  awaiting_signature: "Waiting for you to approve in Freighter…",
+  awaiting_signature: "Waiting for you to approve in your wallet…",
   submitting: "Sending to Stellar Testnet…",
   confirming: "Waiting for ledger confirmation…",
 };

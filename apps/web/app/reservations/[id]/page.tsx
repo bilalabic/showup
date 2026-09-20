@@ -174,7 +174,7 @@ export default function ReservationPage({
           onClick={() => void connect()}
           type="button"
         >
-          {status === "connecting" ? "Connecting…" : "Connect Freighter"}
+          {status === "connecting" ? "Connecting…" : "Connect wallet"}
         </Button>
       </main>
     );

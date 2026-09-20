@@ -10,22 +10,69 @@ import {
   isWalletError,
   TESTNET_NETWORK_PASSPHRASE,
 } from "./port";
+import { isMobileWalletBrowser } from "./platform";
+
+type WalletTransport = "freighter_extension" | "wallet_connect";
 
 type KitRuntime = {
   kit: typeof import("@creit.tech/stellar-wallets-kit/sdk").StellarWalletsKit;
-  freighter: InstanceType<
+  transport: WalletTransport;
+  freighter?: InstanceType<
     typeof import("@creit.tech/stellar-wallets-kit/modules/freighter").FreighterModule
+  >;
+  walletConnect?: InstanceType<
+    typeof import("@creit.tech/stellar-wallets-kit/modules/wallet-connect").WalletConnectModule
   >;
 };
 
 let runtimePromise: Promise<KitRuntime> | null = null;
 
 async function loadKit(): Promise<KitRuntime> {
-  runtimePromise ??= Promise.all([
-    import("@creit.tech/stellar-wallets-kit/sdk"),
-    import("@creit.tech/stellar-wallets-kit/modules/freighter"),
-    import("@creit.tech/stellar-wallets-kit/types"),
-  ]).then(([sdk, freighterModule, types]) => {
+  runtimePromise ??= (async () => {
+    const [sdk, types] = await Promise.all([
+      import("@creit.tech/stellar-wallets-kit/sdk"),
+      import("@creit.tech/stellar-wallets-kit/types"),
+    ]);
+
+    if (isMobileWalletBrowser()) {
+      const projectId =
+        process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim();
+      if (!projectId) {
+        throw {
+          kind: "mobile_wallet_unconfigured",
+        } satisfies WalletError;
+      }
+
+      const walletConnectModule = await import(
+        "@creit.tech/stellar-wallets-kit/modules/wallet-connect"
+      );
+      const walletConnect = new walletConnectModule.WalletConnectModule({
+        projectId,
+        allowedChains: [walletConnectModule.WalletConnectTargetChain.TESTNET],
+        metadata: {
+          name: "ShowUp",
+          description: "Attendance commitment bonds on Stellar Testnet",
+          url: window.location.origin,
+          icons: [`${window.location.origin}/apple-touch-icon.svg`],
+        },
+      });
+
+      sdk.StellarWalletsKit.init({
+        modules: [walletConnect],
+        selectedWalletId: walletConnectModule.WALLET_CONNECT_ID,
+        network: types.Networks.TESTNET,
+      });
+
+      return {
+        kit: sdk.StellarWalletsKit,
+        transport: "wallet_connect" as const,
+        walletConnect,
+      };
+    }
+
+    const freighterModule = await import(
+      "@creit.tech/stellar-wallets-kit/modules/freighter"
+    );
     const freighter = new freighterModule.FreighterModule();
 
     sdk.StellarWalletsKit.init({
@@ -34,8 +81,12 @@ async function loadKit(): Promise<KitRuntime> {
       network: types.Networks.TESTNET,
     });
 
-    return { kit: sdk.StellarWalletsKit, freighter };
-  });
+    return {
+      kit: sdk.StellarWalletsKit,
+      transport: "freighter_extension" as const,
+      freighter,
+    };
+  })();
 
   return runtimePromise;
 }
@@ -106,6 +157,8 @@ function assertTestnet(network: string): void {
 }
 
 async function isFreighterAvailable(runtime: KitRuntime): Promise<boolean> {
+  if (!runtime.freighter) return false;
+
   if (await runtime.freighter.isAvailable()) {
     return true;
   }
@@ -116,6 +169,23 @@ async function isFreighterAvailable(runtime: KitRuntime): Promise<boolean> {
   // "not installed". (The Kit's 1s availability race lives in
   // `refreshSupportedWallets`, which this adapter never calls.)
   return runtime.freighter.isAvailable();
+}
+
+async function waitForWalletConnect(runtime: KitRuntime): Promise<void> {
+  const walletConnect = runtime.walletConnect;
+  if (!walletConnect) {
+    throw { kind: "mobile_wallet_unconfigured" } satisfies WalletError;
+  }
+
+  // SignClient initialization starts in the module constructor. Avoid making
+  // the first tap fail just because that asynchronous setup is still running.
+  const deadline = Date.now() + 10_000;
+  while (!(await walletConnect.isAvailable())) {
+    if (Date.now() >= deadline) {
+      throw new Error("WalletConnect did not become ready in time.");
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+  }
 }
 
 // `getAddress` reads the Kit's cached address, which is hydrated from
@@ -143,6 +213,12 @@ async function readAddress(runtime: KitRuntime): Promise<string | null> {
 }
 
 async function readNetwork(runtime: KitRuntime): Promise<string> {
+  // WalletConnect sessions are restricted to the Testnet chain when the
+  // module is constructed. The module deliberately has no getNetwork API.
+  if (runtime.transport === "wallet_connect") {
+    return TESTNET_NETWORK_PASSPHRASE;
+  }
+
   try {
     const { networkPassphrase } = await runtime.kit.getNetwork();
     return networkPassphrase;
@@ -157,10 +233,15 @@ export function createWalletsKitAdapter(): Wallet {
       try {
         const runtime = await loadKit();
 
+        if (runtime.transport === "wallet_connect") {
+          await waitForWalletConnect(runtime);
+          const { address } = await runtime.kit.fetchAddress();
+          return address;
+        }
+
         if (!(await isFreighterAvailable(runtime))) {
           throw { kind: "no_wallet" } satisfies WalletError;
         }
-
         const { address } = await runtime.kit.authModal();
         assertTestnet(await readNetwork(runtime));
         return address;
@@ -225,6 +306,13 @@ export function createWalletsKitAdapter(): Wallet {
     },
 
     async watchChanges(listener): Promise<StopWatchingWallet> {
+      const runtime = await loadKit();
+      if (runtime.transport === "wallet_connect") {
+        // WalletConnect does not expose Freighter's extension change stream.
+        // Session state is refreshed when the tab regains focus instead.
+        return () => undefined;
+      }
+
       const { WatchWalletChanges } = await import("@stellar/freighter-api");
       const watcher = new WatchWalletChanges();
       const result = watcher.watch((change) => {

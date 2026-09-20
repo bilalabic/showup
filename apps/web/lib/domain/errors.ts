@@ -127,13 +127,15 @@ export function userFacingError(
     case "user_rejected":
       return "You declined the signature. Nothing was changed on-chain.";
     case "wrong_network":
-      return "Freighter is not on Stellar Testnet. Switch networks and try again.";
+      return "Your wallet is not on Stellar Testnet. Switch networks and try again.";
     case "no_wallet":
       return "Freighter is not available. Install or unlock it, then try again.";
+    case "mobile_wallet_unconfigured":
+      return "Mobile wallet connection is not configured for this deployment.";
     case "not_connected":
       return "Your wallet disconnected. Reconnect and try again.";
     case "account_changed":
-      return "Freighter is using a different account. Reconnect the intended account and try again.";
+      return "Your wallet is using a different account. Reconnect the intended account and try again.";
     case "restore_required":
       return "This on-chain record needs restoration before it can be used. Refresh and try again.";
     case "timeout":

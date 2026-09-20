@@ -40,7 +40,7 @@ No real money moves, no real KYC is performed, and Mainnet is out of scope.
 ```text
 Participant / organizer browser
         │
-        ├── Stellar Wallets Kit + Freighter ──► Stellar Testnet
+        ├── Wallets Kit + Freighter / WalletConnect ──► Stellar Testnet
         │                                         │
         │                                         ├── ShowUp bond contract
         │                                         └── Mock USDC SAC
@@ -64,7 +64,9 @@ renders SEP-10 tokens or environment objects.
   `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA`.
 - **Classic asset:** `USDC` issued by
   `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` on Testnet.
-- **Stellar Wallets Kit + Freighter:** connects accounts and signs every write.
+- **Stellar Wallets Kit + Freighter:** uses the browser extension on desktop
+  and WalletConnect v2 to hand mobile sessions to the Freighter app; every
+  write remains user-signed.
 - **RPC and Horizon:** read contract state, ledgers, balances, reserves and trustlines.
 - **TR Mock Anchor:** provides the simulated TRY → Testnet USDC path through
   SEP-1/10/38/6. Its `simulate-bank-transfer` endpoint is sandbox-only.
@@ -110,6 +112,12 @@ pnpm dev
 The defaults are Testnet-only. Set `NEXT_PUBLIC_ENABLE_DEMO_TOOLS=true` only for
 the clearly labelled hackathon sandbox flow; keep it `false` in any environment
 that is not demonstrating the Mock Anchor.
+
+Mobile wallet handoff also requires a public Reown project identifier in
+`NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`. Create it at
+[cloud.reown.com](https://cloud.reown.com), allow the deployed origin, and add
+the same value to the Vercel environment. It is a public client identifier, not
+a wallet secret.
 
 ### Verification
 

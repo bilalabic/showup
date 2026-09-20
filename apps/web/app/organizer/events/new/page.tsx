@@ -247,7 +247,7 @@ export default function NewEventPage() {
             onClick={() => void connect()}
             type="button"
           >
-            {status === "connecting" ? "Connecting…" : "Connect Freighter"}
+            {status === "connecting" ? "Connecting…" : "Connect wallet"}
           </Button>
         </div>
       ) : null}

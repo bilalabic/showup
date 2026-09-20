@@ -3,6 +3,7 @@ export const TESTNET_NETWORK_PASSPHRASE =
 
 export type WalletError =
   | { kind: "no_wallet" }
+  | { kind: "mobile_wallet_unconfigured" }
   | { kind: "rejected" }
   | { kind: "wrong_network"; actual: string; expected: string }
   | { kind: "account_changed"; actual?: string; expected: string }
@@ -36,6 +37,7 @@ export function isWalletError(value: unknown): value is WalletError {
 
   return [
     "no_wallet",
+    "mobile_wallet_unconfigured",
     "rejected",
     "wrong_network",
     "account_changed",
