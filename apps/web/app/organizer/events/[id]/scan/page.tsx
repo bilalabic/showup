@@ -18,6 +18,7 @@ import {
 import {
   canCheckIn,
   fromStroops,
+  parseEventId,
   type EventView,
   type ReservationView,
 } from "@/lib/domain";
@@ -44,8 +45,6 @@ type Candidate = {
   assets: AccountAssets | null;
 };
 
-const MAX_U64 = (1n << 64n) - 1n;
-
 function formatMoment(unixSeconds: number): string {
   return new Date(unixSeconds * 1000).toLocaleString(undefined, {
     dateStyle: "medium",
@@ -62,14 +61,7 @@ export default function ScanPage({
 }) {
   const { id } = use(params);
   const query = use(searchParams);
-  const eventId = useMemo(() => {
-    try {
-      const parsed = BigInt(id);
-      return parsed > 0n && parsed <= MAX_U64 ? parsed : null;
-    } catch {
-      return null;
-    }
-  }, [id]);
+  const eventId = useMemo(() => parseEventId(id), [id]);
   const { address, canTransact, connect, signTransaction, status } = useWallet();
   const videoRef = useRef<HTMLVideoElement>(null);
   const txBusyRef = useRef(false);
@@ -303,7 +295,6 @@ export default function ScanPage({
             <div className="overflow-hidden rounded-2xl bg-black">
               <video
                 aria-label="Camera preview for QR scanning"
-                autoPlay
                 className="aspect-square w-full object-cover"
                 muted
                 playsInline

@@ -16,6 +16,12 @@ import {
 import { XlmFundingNotice } from "@/components/wallet/xlm-funding-notice";
 import { createEvent, type CreateEventInput, type TxPhase } from "@/lib/contract";
 import { toStroops } from "@/lib/domain";
+import {
+  EVENT_SCHEDULE_STEP_SECONDS,
+  eveningStart,
+  nextSaturdayEvening,
+  scheduleAroundStart,
+} from "@/lib/domain/event-schedule";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { getAccountAssets, type AccountAssets } from "@/lib/stellar";
 import { useWallet } from "@/lib/wallet/provider";
@@ -163,6 +169,29 @@ export default function NewEventPage() {
   const set = (key: keyof FormValues) => (event: { target: { value: string } }) => {
     setValues((previous) => ({ ...previous, [key]: event.target.value }));
   };
+
+  function applySchedule(startTime: string) {
+    const schedule = scheduleAroundStart(startTime);
+    if (!schedule) return;
+
+    setValues((previous) => ({ ...previous, ...schedule }));
+    setErrors((previous) => ({
+      ...previous,
+      startTime: undefined,
+      checkinStart: undefined,
+      checkinDeadline: undefined,
+      cancellationDeadline: undefined,
+    }));
+  }
+
+  function applyPreset(kind: "tomorrow" | "saturday") {
+    const now = Date.now();
+    const startTime =
+      kind === "tomorrow"
+        ? eveningStart(now, 1)
+        : nextSaturdayEvening(now);
+    applySchedule(startTime);
+  }
 
   const busy = tx.kind === "running";
 
@@ -325,58 +354,110 @@ export default function NewEventPage() {
             </FormField>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
-            <FormField
-              error={errors.cancellationDeadline}
-              hint="Until this moment a participant can cancel and get everything back."
-              htmlFor="cancellationDeadline"
-              label="Free cancellation until"
-            >
-              <TextInput
-                id="cancellationDeadline"
-                onChange={set("cancellationDeadline")}
-                type="datetime-local"
-                value={values.cancellationDeadline}
-              />
-            </FormField>
-            <FormField
-              error={errors.startTime}
-              htmlFor="startTime"
-              label="Event starts"
-            >
-              <TextInput
-                id="startTime"
-                onChange={set("startTime")}
-                type="datetime-local"
-                value={values.startTime}
-              />
-            </FormField>
-            <FormField
-              error={errors.checkinStart}
-              htmlFor="checkinStart"
-              label="Check-in opens"
-            >
-              <TextInput
-                id="checkinStart"
-                onChange={set("checkinStart")}
-                type="datetime-local"
-                value={values.checkinStart}
-              />
-            </FormField>
-            <FormField
-              error={errors.checkinDeadline}
-              hint="After this, unclaimed bonds can be settled as no-shows."
-              htmlFor="checkinDeadline"
-              label="Check-in closes"
-            >
-              <TextInput
-                id="checkinDeadline"
-                onChange={set("checkinDeadline")}
-                type="datetime-local"
-                value={values.checkinDeadline}
-              />
-            </FormField>
-          </div>
+          <section className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-base font-bold text-white">Schedule</h2>
+                <p className="mt-1 max-w-xl text-sm leading-6 text-slate-400">
+                  Times use your device&apos;s local timezone. Start with a preset
+                  or choose the event start, then fill the policy around it.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => applyPreset("tomorrow")}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Tomorrow, 19:00
+                </Button>
+                <Button
+                  onClick={() => applyPreset("saturday")}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Next Saturday, 19:00
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              <FormField
+                error={errors.startTime}
+                hint="The advertised start time."
+                htmlFor="startTime"
+                label="Event starts"
+              >
+                <TextInput
+                  id="startTime"
+                  onChange={set("startTime")}
+                  step={EVENT_SCHEDULE_STEP_SECONDS}
+                  type="datetime-local"
+                  value={values.startTime}
+                />
+              </FormField>
+
+              <div className="flex items-end">
+                <Button
+                  className="w-full sm:w-auto"
+                  disabled={!values.startTime}
+                  onClick={() => applySchedule(values.startTime)}
+                  type="button"
+                  variant="secondary"
+                >
+                  Fill times around start
+                </Button>
+              </div>
+
+              <FormField
+                error={errors.checkinStart}
+                hint="Suggested: 30 minutes before the event."
+                htmlFor="checkinStart"
+                label="Check-in opens"
+              >
+                <TextInput
+                  id="checkinStart"
+                  max={values.startTime || undefined}
+                  onChange={set("checkinStart")}
+                  step={EVENT_SCHEDULE_STEP_SECONDS}
+                  type="datetime-local"
+                  value={values.checkinStart}
+                />
+              </FormField>
+              <FormField
+                error={errors.checkinDeadline}
+                hint="After this, unclaimed bonds can be settled as no-shows."
+                htmlFor="checkinDeadline"
+                label="Check-in closes"
+              >
+                <TextInput
+                  id="checkinDeadline"
+                  min={values.startTime || values.checkinStart || undefined}
+                  onChange={set("checkinDeadline")}
+                  step={EVENT_SCHEDULE_STEP_SECONDS}
+                  type="datetime-local"
+                  value={values.checkinDeadline}
+                />
+              </FormField>
+              <FormField
+                error={errors.cancellationDeadline}
+                hint="Until this moment a participant can cancel and get everything back."
+                htmlFor="cancellationDeadline"
+                label="Free cancellation until"
+              >
+                <TextInput
+                  id="cancellationDeadline"
+                  max={values.checkinStart || undefined}
+                  onChange={set("cancellationDeadline")}
+                  step={EVENT_SCHEDULE_STEP_SECONDS}
+                  type="datetime-local"
+                  value={values.cancellationDeadline}
+                />
+              </FormField>
+            </div>
+          </section>
 
           <FormField
             error={errors.organizerShare}

@@ -23,6 +23,7 @@ import {
 } from "@/lib/contract";
 import {
   canSettleNoShow,
+  parseEventId,
   splitByBps,
   type EventView,
   type ReservationView,
@@ -42,22 +43,13 @@ type PendingAction =
   | { kind: "settle_no_show"; reservation: ReservationView }
   | null;
 
-const MAX_U64 = (1n << 64n) - 1n;
-
 export default function OrganizerEventPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const eventId = useMemo(() => {
-    try {
-      const parsed = BigInt(id);
-      return parsed > 0n && parsed <= MAX_U64 ? parsed : null;
-    } catch {
-      return null;
-    }
-  }, [id]);
+  const eventId = useMemo(() => parseEventId(id), [id]);
   const { address, canTransact, connect, signTransaction, status } = useWallet();
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [tx, setTx] = useState<TxState>({ kind: "idle" });

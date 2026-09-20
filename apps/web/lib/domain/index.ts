@@ -15,6 +15,8 @@ export type {
   ReservationView,
 } from "./types";
 
+export { MAX_EVENT_ID, parseEventId } from "./event-id";
+
 export {
   AMOUNT_DECIMALS,
   ONE_UNIT_IN_STROOPS,

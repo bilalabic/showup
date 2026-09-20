@@ -26,6 +26,7 @@ import {
 import {
   canCancelReservation,
   canClaimCancelledRefund,
+  parseEventId,
   type EventView,
   type ReservationView,
 } from "@/lib/domain";
@@ -45,18 +46,6 @@ type ReservationSnapshot = {
   reservation: ReservationView | null;
   assets: AccountAssets | null;
 };
-
-const MAX_U64 = (1n << 64n) - 1n;
-
-function parseEventId(raw: string): bigint | null {
-  if (!/^\d+$/.test(raw)) return null;
-  try {
-    const value = BigInt(raw);
-    return value > 0n && value <= MAX_U64 ? value : null;
-  } catch {
-    return null;
-  }
-}
 
 function formatMoment(unixSeconds: number): string {
   return new Date(unixSeconds * 1000).toLocaleString(undefined, {

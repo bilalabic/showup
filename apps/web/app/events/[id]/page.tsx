@@ -35,6 +35,7 @@ import {
 import {
   canReserve,
   fromStroops,
+  parseEventId,
   splitByBps,
   type EventView,
   type ReservationView,
@@ -211,13 +212,7 @@ export default function EventPage({
   const [confirming, setConfirming] = useState(false);
   const [tx, setTx] = useState<TxState>({ kind: "idle" });
 
-  const eventId = useMemo(() => {
-    try {
-      return BigInt(id);
-    } catch {
-      return null;
-    }
-  }, [id]);
+  const eventId = useMemo(() => parseEventId(id), [id]);
 
   const state = useAsyncData<EventSnapshot>(
     // Eligibility is always judged against the ledger clock, never the
