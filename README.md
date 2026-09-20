@@ -352,12 +352,22 @@ steps, in order:
 | Browser-signed create and check-in | **Pending.** Event 11's verifier is a CLI-held key, so its check-in was signed by the CLI. An end-to-end browser round needs an event created from `/organizer/events/new` by the same wallet that checks in. |
 | Successful Anchor deposit id + Stellar transaction | **Pending live Anchor worker acceptance** |
 | Public demo URL | [showup-steel.vercel.app](https://showup-steel.vercel.app) |
-| Demo video | **Pending** |
+| Public repository | [github.com/bilalabic/showup](https://github.com/bilalabic/showup) |
 | Pitch deck | **Pending** — built from the official Stellar Pro Hackathon template |
 
 Implementation ownership lives in this public repository; team/contact fields
 and the project narrative must be completed by the owner in the submission
 portal rather than invented in source control.
+
+### Not a submission requirement
+
+A recorded demo video is **not** on the published requirement list, and whether
+one is expected has never appeared in an official source — the project's own
+specification still carries it as an open question for the organizers. It is
+kept here only as **fallback insurance**: if the live demo fails in the room, a
+recorded run of the same flow can stand in, labelled as a recording rather than
+presented as live. It is worth the time only once the required items above are
+finished.
 
 ## More documentation
 
