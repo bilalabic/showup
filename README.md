@@ -1,6 +1,4 @@
 # ShowUp
-<img width="1186" height="896" alt="Screenshot 2026-09-20 110520" src="https://github.com/user-attachments/assets/71b76fa6-52ce-4fb5-a02f-e765e26df8fe" />
-
 
 **Programmable attendance commitment bonds for events and reservations, on Stellar.**
 
@@ -9,25 +7,32 @@ Rise In × Stellar Pro Hackathon Türkiye 2026 — **Genesis** track — **Stell
 **Live demo: [showup-steel.vercel.app](https://showup-steel.vercel.app)** ·
 **Contract: [`CCCDFM2M…IRHM`](https://stellar.expert/explorer/testnet/contract/CCCDFM2MGKO5PEBS565O7FO2OL4CZYUFFRTQLUPPIIIL2JNCPUSUIRHM)**
 
+
 > The P0 product is deployed and the bond lifecycle is verified on-chain — see
 > **Submission evidence** for the reserve, check-in refund and 80/20 no-show
 > settlement transactions, a Mock Anchor on-ramp that settled end to end, and a
 > complete browser-signed round on event 18 — create, reserve, then check-in
 > with the bond refunded in the same transaction. This README never presents a
 > pending item as complete.
+<img width="1186" height="896" alt="Screenshot 2026-09-20 110520" src="https://github.com/user-attachments/assets/71b76fa6-52ce-4fb5-a02f-e765e26df8fe" />
 
 ### Try it in two minutes
 The organizer sets the refundable bond, capacity, check-in window, and the
 published no-show split. Once the first bond is locked, the policy cannot change
-
+1. Open the demo and install [Freighter](https://www.freighter.app/), set to **Testnet**.
 <img width="1220" height="902" alt="Screenshot 2026-09-20 111923" src="https://github.com/user-attachments/assets/3ad8eb34-ab3b-4785-a4de-37bee4a35ada" />
 
 
-1. Open the demo and install [Freighter](https://www.freighter.app/), set to **Testnet**.
 2. `/wallet` → fund the account with friendbot, then **Enable USDC**.
+<img width="1235" height="914" alt="Screenshot 2026-09-20 111203" src="https://github.com/user-attachments/assets/4a6c5e34-863d-463d-b733-900ba5a83d4f" />
+
+
 3. From the landing page follow **View latest event** to `/events/[id]`, read the
    full policy, and **Reserve**.
-4. `/reservations/[id]` → your QR pass. The organizer scans it at
+   <img width="1215" height="917" alt="Screenshot 2026-09-20 112132" src="https://github.com/user-attachments/assets/515fdd31-f17c-4ea6-b75a-0c7d7cb3597c" />
+
+
+5. `/reservations/[id]` → your QR pass. The organizer scans it at
    `/organizer/events/[id]/scan` and signs the check-in; the contract returns
    the bond in the same transaction. If the camera is unavailable, that page's
    **Manual fallback** takes the participant address instead.
