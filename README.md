@@ -193,7 +193,11 @@ influenced and the live corrections discovered during implementation.
 | Wasm upload | [651dd075474426439024f83ddb6024e2e3bfc14d46bfeafecefc390c2c6d8703](https://stellar.expert/explorer/testnet/tx/651dd075474426439024f83ddb6024e2e3bfc14d46bfeafecefc390c2c6d8703) |
 | Contract deploy | [872d4f9501ef75ce57e17756b8aac3fc09b2fe5d96cda525f7b72cc9598b223e](https://stellar.expert/explorer/testnet/tx/872d4f9501ef75ce57e17756b8aac3fc09b2fe5d96cda525f7b72cc9598b223e) |
 | C4 smoke event | [6444c9b41a79397d86756b540a6a3a541385e39740e0d3fd53da4a9dc7a0c796](https://stellar.expert/explorer/testnet/tx/6444c9b41a79397d86756b540a6a3a541385e39740e0d3fd53da4a9dc7a0c796) |
-| Browser create/reserve/check-in/no-show/cancellation hashes | **Pending live Freighter acceptance** |
+| **Bond locked** (event 9) | [6e3c00ab4915ad81b7e9a93d8771213d7d90aa9a7b91cbc92c98b1de9652ac4d](https://stellar.expert/explorer/testnet/tx/6e3c00ab4915ad81b7e9a93d8771213d7d90aa9a7b91cbc92c98b1de9652ac4d) |
+| **Attendance refund** (event 9) | [92a8500e6162459c61e69658a24d8dfc7fd4a8f8d4e1eb56b4c3dc5469596586](https://stellar.expert/explorer/testnet/tx/92a8500e6162459c61e69658a24d8dfc7fd4a8f8d4e1eb56b4c3dc5469596586) |
+| **Bond locked** (event 10) | [cb63498d25e17999144059ca60b5390939fbf456232e8e3447e2c108673e92c2](https://stellar.expert/explorer/testnet/tx/cb63498d25e17999144059ca60b5390939fbf456232e8e3447e2c108673e92c2) |
+| **No-show settlement** (event 10, 80/20) | [e17cfd91b3c289df03f928a88406bce3d3e122206ba6bd88737bd63fb930d350](https://stellar.expert/explorer/testnet/tx/e17cfd91b3c289df03f928a88406bce3d3e122206ba6bd88737bd63fb930d350) |
+| Browser-signed hashes for the same calls | **Pending live Freighter acceptance.** The four above were signed by the Stellar CLI, not by the web app; they prove the contract, not the UI. |
 | Successful Anchor deposit id + Stellar transaction | **Pending live Anchor worker acceptance** |
 | Public demo URL | **Pending deployment** |
 | Demo video | **Pending** |

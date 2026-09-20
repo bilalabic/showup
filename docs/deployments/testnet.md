@@ -43,3 +43,40 @@ The smoke transaction created event id `1`, and a subsequent simulated
 constant therefore contains both the Testnet passphrase and the contract ID.
 The generator's Stellar SDK dependency was aligned to `^17.1.0` to prevent a
 second incompatible SDK copy in the pnpm workspace.
+
+## Bond lifecycle, verified on-chain
+
+Run on 2026-09-20 against the contract above, signed by the Stellar CLI. These
+transactions prove the settlement logic on a live network rather than only in
+unit tests. They do **not** prove the browser flow — the web app's signed
+equivalents are still outstanding.
+
+Funding note: the Mock Anchor's on-ramp payout worker was down during this run,
+so the participant's Mock USDC came from the Circle testnet faucet instead. The
+settlement asset is the same Circle testnet USDC the Anchor issues, so the
+contract path is unaffected — but this is not Anchor acceptance evidence.
+
+### Attendance refund — event 9
+
+| Step | Transaction | Effect |
+|---|---|---|
+| `reserve` | [`6e3c00ab…2ac4d`](https://stellar.expert/explorer/testnet/tx/6e3c00ab4915ad81b7e9a93d8771213d7d90aa9a7b91cbc92c98b1de9652ac4d) | participant 20 → 17.5 USDC, contract 0 → 2.5 |
+| `check_in` | [`92a8500e…96586`](https://stellar.expert/explorer/testnet/tx/92a8500e6162459c61e69658a24d8dfc7fd4a8f8d4e1eb56b4c3dc5469596586) | contract 2.5 → 0, participant back to 20 |
+
+Final reservation state: `status: "Attended"`, `amount: 25000000`.
+Emitted `BondLocked` then `CheckedIn`.
+
+### No-show settlement — event 10
+
+| Step | Transaction | Effect |
+|---|---|---|
+| `reserve` | [`cb63498d…3e92c2`](https://stellar.expert/explorer/testnet/tx/cb63498d25e17999144059ca60b5390939fbf456232e8e3447e2c108673e92c2) | participant 20 → 17.5 USDC, contract 0 → 2.5 |
+| `settle_no_show` | [`e17cfd91…30d350`](https://stellar.expert/explorer/testnet/tx/e17cfd91b3c289df03f928a88406bce3d3e122206ba6bd88737bd63fb930d350) | contract 2.5 → 0, organizer +2.0, community pool +0.5 |
+
+Final reservation state: `status: "NoShowSettled"`.
+Emitted `NoShowSettled` with `organizer_amount: 20000000`,
+`community_amount: 5000000` — exactly the event's 8000/2000 basis points, summing
+to the locked `25000000` with no dust left in the contract.
+
+`settle_no_show` is permissionless by design; this call was made after the
+check-in deadline had passed, which is the only condition it enforces.
