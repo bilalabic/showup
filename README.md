@@ -347,7 +347,9 @@ steps, in order:
 | **Attendance refund** (event 9) | [92a8500e6162459c61e69658a24d8dfc7fd4a8f8d4e1eb56b4c3dc5469596586](https://stellar.expert/explorer/testnet/tx/92a8500e6162459c61e69658a24d8dfc7fd4a8f8d4e1eb56b4c3dc5469596586) |
 | **Bond locked** (event 10) | [cb63498d25e17999144059ca60b5390939fbf456232e8e3447e2c108673e92c2](https://stellar.expert/explorer/testnet/tx/cb63498d25e17999144059ca60b5390939fbf456232e8e3447e2c108673e92c2) |
 | **No-show settlement** (event 10, 80/20) | [e17cfd91b3c289df03f928a88406bce3d3e122206ba6bd88737bd63fb930d350](https://stellar.expert/explorer/testnet/tx/e17cfd91b3c289df03f928a88406bce3d3e122206ba6bd88737bd63fb930d350) |
-| Browser-signed hashes for the same calls | **Pending live Freighter acceptance.** The four above were signed by the Stellar CLI, not by the web app; they prove the contract, not the UI. |
+| **Browser-signed reserve** (event 11, Freighter) | [09a4dbb9e7d121b6940ed5fc11f39faff27886ef0a323317e60c844b81d055c6](https://stellar.expert/explorer/testnet/tx/09a4dbb9e7d121b6940ed5fc11f39faff27886ef0a323317e60c844b81d055c6) |
+| Matching refund (event 11) | [ee6512c079e255e1b173e051d79c44064c2cd9588f8d4261d6764ed71ae48d02](https://stellar.expert/explorer/testnet/tx/ee6512c079e255e1b173e051d79c44064c2cd9588f8d4261d6764ed71ae48d02) |
+| Browser-signed create and check-in | **Pending.** Event 11's verifier is a CLI-held key, so its check-in was signed by the CLI. An end-to-end browser round needs an event created from `/organizer/events/new` by the same wallet that checks in. |
 | Successful Anchor deposit id + Stellar transaction | **Pending live Anchor worker acceptance** |
 | Public demo URL | [showup-steel.vercel.app](https://showup-steel.vercel.app) |
 | Demo video | **Pending** |

@@ -80,3 +80,20 @@ to the locked `25000000` with no dust left in the contract.
 
 `settle_no_show` is permissionless by design; this call was made after the
 check-in deadline had passed, which is the only condition it enforces.
+
+### Browser-signed reservation — event 11
+
+The first reservation signed by the web app rather than the CLI, from Freighter
+on Testnet.
+
+| Step | Transaction | Signed by |
+|---|---|---|
+| `reserve` | [`09a4dbb9…055c6`](https://stellar.expert/explorer/testnet/tx/09a4dbb9e7d121b6940ed5fc11f39faff27886ef0a323317e60c844b81d055c6) | Freighter, `GCZULUTQ…LL7VN` |
+| `check_in` | [`ee6512c0…48d02`](https://stellar.expert/explorer/testnet/tx/ee6512c079e255e1b173e051d79c44064c2cd9588f8d4261d6764ed71ae48d02) | Stellar CLI, event 11's verifier |
+
+Participant balance moved 20 → 17.5 USDC on reserve and back to 20 on check-in.
+
+Event 11 was seeded by `scripts/seed-demo-event.sh`, so its organizer — and
+therefore its verifier — is the CLI deploy identity. A fully browser-signed
+round requires an event created from `/organizer/events/new`, where the
+connected wallet becomes both organizer and verifier.
