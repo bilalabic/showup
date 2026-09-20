@@ -11,8 +11,8 @@ yet been captured; it is not silently counted as complete.
 | Soroban attendance bond | `contracts/showup-bond` | 58 tests; deployed contract recorded |
 | Mock USDC trustline and balances | Horizon asset/reserve layer and `/wallet` | Implemented; live signature pending |
 | Public TRY estimate | SEP-38 `/price` on event detail | Implemented and unit tested |
-| Mock Anchor TRY → USDC | SEP-1/10/38/6 client and deposit state machine | Implemented; successful live on-ramp record pending |
-| Exact bond reservation | Event detail transaction flow | Browser-signed hash recorded (event 11) |
+| Mock Anchor TRY → USDC | SEP-1/10/38/6 client and deposit state machine | Live deposit completed: `sep_c3awgubgw3jk1sh4owp5`, 150 TRY → 3.0594136 USDC |
+| Exact bond reservation | Event detail transaction flow | Browser-signed hashes recorded (events 11 and 15) |
 | Reservation discovery | Retention-aware contract-event index | Implemented; incomplete history is disclosed |
 | QR check-in and refund | Reservation pass + organizer scanner | Refund hashes recorded (events 9 and 11); browser-signed check-in pending |
 | Cancellation/refund | Participant and organizer actions | Implemented; hashes pending |
@@ -25,21 +25,21 @@ yet been captured; it is not silently counted as complete.
 
 ## Definition-of-Done evidence still requiring a browser wallet
 
-1. Create an event with the organizer wallet.
-2. Enable the participant's pinned USDC trustline.
-3. Complete a Mock Anchor deposit and record its deposit id and Stellar payment.
-4. Scan and check in from the organizer device, against an event created by the
-   same wallet, and record the refund hash. The reserve leg is already
-   browser-signed; only the verifier side is still CLI-held.
-5. Reserve the compressed fixture, settle the no-show, and record the split hash
-   from the browser. The split itself is proven, but CLI-signed.
-6. Cancel a separate reservation and event, claim the refund, and record hashes.
+1. Check in from the browser and record the hash. Event 15 was created and
+   reserved in the browser, but its check-in window opens the next day, so the
+   round could not be closed in the same session. This needs an event whose
+   check-in window is already open when the reservation is made.
+2. Settle a no-show from the browser and record the split hash. The split itself
+   is proven on chain, but CLI-signed.
+3. Cancel a reservation and an event from the browser, claim the refund, and
+   record the hashes.
 
 The frontend is published and its URL is recorded above; the remaining items are
 browser-signed transaction hashes that prove the published app actually works.
 
 Faucet-funded Testnet USDC may unblock contract testing, but it is not evidence
-of a successful Anchor integration.
+of a successful Anchor integration. That evidence now exists separately: a live
+SEP-6 deposit settled end to end, TRY in and USDC paid out on Stellar.
 
 ## Deliberately not on this list
 

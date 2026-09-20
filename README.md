@@ -349,8 +349,10 @@ steps, in order:
 | **No-show settlement** (event 10, 80/20) | [e17cfd91b3c289df03f928a88406bce3d3e122206ba6bd88737bd63fb930d350](https://stellar.expert/explorer/testnet/tx/e17cfd91b3c289df03f928a88406bce3d3e122206ba6bd88737bd63fb930d350) |
 | **Browser-signed reserve** (event 11, Freighter) | [09a4dbb9e7d121b6940ed5fc11f39faff27886ef0a323317e60c844b81d055c6](https://stellar.expert/explorer/testnet/tx/09a4dbb9e7d121b6940ed5fc11f39faff27886ef0a323317e60c844b81d055c6) |
 | Matching refund (event 11) | [ee6512c079e255e1b173e051d79c44064c2cd9588f8d4261d6764ed71ae48d02](https://stellar.expert/explorer/testnet/tx/ee6512c079e255e1b173e051d79c44064c2cd9588f8d4261d6764ed71ae48d02) |
-| Browser-signed create and check-in | **Pending.** Event 11's verifier is a CLI-held key, so its check-in was signed by the CLI. An end-to-end browser round needs an event created from `/organizer/events/new` by the same wallet that checks in. |
-| Successful Anchor deposit id + Stellar transaction | **Pending live Anchor worker acceptance** |
+| **Browser-signed create_event** (event 15, Freighter) | [f5e4781e2653913b05a44aadcd57d4ae71341b0211b862316d79355d8e362c16](https://stellar.expert/explorer/testnet/tx/f5e4781e2653913b05a44aadcd57d4ae71341b0211b862316d79355d8e362c16) |
+| **Browser-signed reserve** (event 15, Freighter) | [f0d6998dc443400207bb10d2ccea98ce02dd719298ffaddbf8929bb702ef0655](https://stellar.expert/explorer/testnet/tx/f0d6998dc443400207bb10d2ccea98ce02dd719298ffaddbf8929bb702ef0655) |
+| Browser-signed check-in | **Pending.** Event 15 was created with a next-day check-in window, so its window is not open yet. A same-session round needs an event whose check-in window is already open. |
+| **Anchor deposit** — SEP-6 id `sep_c3awgubgw3jk1sh4owp5`, 150.00 TRY → 3.0594136 USDC (0.75 TRY fee), external ref `TRMA-S5X3-PLQV` | [f66e2f1745ba6c96fe3c943425fabdcad746d05fa897ea83cd5bd737d05c56fd](https://stellar.expert/explorer/testnet/tx/f66e2f1745ba6c96fe3c943425fabdcad746d05fa897ea83cd5bd737d05c56fd) |
 | Public demo URL | [showup-steel.vercel.app](https://showup-steel.vercel.app) |
 | Public repository | [github.com/bilalabic/showup](https://github.com/bilalabic/showup) |
 | Pitch deck | **Pending** — built from the official Stellar Pro Hackathon template |
