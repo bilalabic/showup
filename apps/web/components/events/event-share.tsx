@@ -13,39 +13,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { copyText } from "@/components/ui/copy-text";
 import { cn } from "@/components/ui/utils";
 import { buildPublicEventUrl } from "@/lib/domain/event-url";
 
 function subscribeToBrowserReady(): () => void {
   return () => undefined;
-}
-
-async function copyText(value: string): Promise<void> {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(value);
-      return;
-    } catch {
-      // Some embedded browsers expose the API but deny it at runtime. Fall
-      // through to the user-initiated DOM copy path before reporting failure.
-    }
-  }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = value;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-
-  try {
-    if (!document.execCommand("copy")) {
-      throw new Error("The browser rejected the copy request.");
-    }
-  } finally {
-    textarea.remove();
-  }
 }
 
 type EventShareProps = {

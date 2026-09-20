@@ -5,6 +5,7 @@ import { NumberTicker } from "@/components/ui/magic/number-ticker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConnectPrompt, ErrorState } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { AccountAddress } from "@/components/wallet/account-address";
 import { AnchorDeposit } from "@/components/wallet/anchor-deposit";
 import { EnableUsdcAction } from "@/components/wallet/enable-usdc-action";
 import { XlmFundingNotice } from "@/components/wallet/xlm-funding-notice";
@@ -89,6 +90,8 @@ export default function WalletPage() {
         What you hold on Stellar Testnet, and what ShowUp needs before you can
         reserve a spot.
       </p>
+
+      {address ? <AccountAddress address={address} /> : null}
 
       {!address ? (
         <ConnectPrompt className="mt-10">
