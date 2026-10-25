@@ -380,11 +380,11 @@ steps, in order:
 | **Anchor deposit** — SEP-6 id `sep_c3awgubgw3jk1sh4owp5`, 150.00 TRY → 3.0594136 USDC (0.75 TRY fee), external ref `TRMA-S5X3-PLQV` | [f66e2f1745ba6c96fe3c943425fabdcad746d05fa897ea83cd5bd737d05c56fd](https://stellar.expert/explorer/testnet/tx/f66e2f1745ba6c96fe3c943425fabdcad746d05fa897ea83cd5bd737d05c56fd) |
 | Public demo URL | [showup-steel.vercel.app](https://showup-steel.vercel.app) |
 | Public repository | [github.com/bilalabic/showup](https://github.com/bilalabic/showup) |
-| Pitch deck | **Pending** — built from the official Stellar Pro Hackathon template |
+| Pitch deck | Presented at the hackathon |
 
-Implementation ownership lives in this public repository; team/contact fields
-and the project narrative must be completed by the owner in the submission
-portal rather than invented in source control.
+Implementation ownership lives in this public repository. The team and contact
+fields and the project narrative were completed by the team in the submission
+portal.
 
 ### Not a submission requirement
 
