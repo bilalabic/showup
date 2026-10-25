@@ -357,7 +357,7 @@ steps, in order:
 
 ## Team
 
-- [@bilalabic](https://github.com/bilalabic)
+- **Bilal Abiç** — [@bilalabic](https://github.com/bilalabic)
 - **Berzan Baran** — [@BerzanBaran](https://github.com/BerzanBaran)
 
 ## Submission evidence
